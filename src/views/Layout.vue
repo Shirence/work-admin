@@ -1,16 +1,18 @@
 <template>
   <div class="layout">
-    <!-- 左侧导航 -->
+    <!-- 侧栏 -->
     <aside class="aside">
-      <div class="logo">
-        <div class="logo-mark">W</div>
-        <div class="logo-text">
-          <span class="logo-title mono">WORK_ADMIN</span>
-          <span class="logo-sub">工作管理中台</span>
+      <div class="brand">
+        <div class="brand-mark">
+          <span>W</span>
+        </div>
+        <div class="brand-text">
+          <strong>WORK ADMIN</strong>
+          <small>工作管理中台</small>
         </div>
       </div>
 
-      <div class="nav-label mono">// NAVIGATION</div>
+      <div class="nav-group u-label">Navigation</div>
 
       <nav class="nav">
         <router-link
@@ -20,36 +22,44 @@
           class="nav-item"
           :class="{ active: $route.path === item.path }"
         >
-          <span class="nav-index mono">{{ String(i + 1).padStart(2, '0') }}</span>
+          <span class="nav-rail"></span>
           <el-icon class="nav-icon"><component :is="item.icon" /></el-icon>
           <span class="nav-title">{{ item.title }}</span>
+          <span class="nav-index mono">{{ String(i + 1).padStart(2, '0') }}</span>
         </router-link>
       </nav>
 
-      <div class="aside-footer">
-        <div class="status-line mono"><span class="dot ok"></span>SYS.ONLINE</div>
-        <div class="ver mono">v1.0.0 · 教学演示</div>
+      <div class="aside-foot">
+        <div class="status">
+          <span class="dot"></span>
+          <span class="mono">All systems normal</span>
+        </div>
+        <div class="u-label">v1.0.0</div>
       </div>
     </aside>
 
-    <!-- 右侧主体 -->
-    <div class="main-wrap">
-      <header class="header">
-        <div class="header-left">
-          <span class="crumb mono">/ {{ $route.path }}</span>
-          <span class="page-title">{{ pageTitle }}</span>
+    <!-- 主区 -->
+    <div class="main">
+      <header class="topbar glass">
+        <div class="topbar-left">
+          <div class="u-label">{{ $route.path }}</div>
+          <h1 class="page-title">{{ pageTitle }}</h1>
         </div>
-        <div class="header-right">
-          <span class="role mono">[ {{ roleLabel }} ]</span>
-          <div class="user">
-            <el-avatar :size="28" class="avatar">{{ avatarText }}</el-avatar>
-            <span class="username mono">{{ username }}</span>
+
+        <div class="topbar-right">
+          <span class="role-chip mono">{{ roleLabel }}</span>
+          <div class="who">
+            <el-avatar :size="30" class="avatar">{{ avatarText }}</el-avatar>
+            <div class="who-text">
+              <strong>{{ username }}</strong>
+              <small class="u-label">Signed in</small>
+            </div>
           </div>
-          <button class="logout mono" type="button" @click="handleLogout">EXIT</button>
+          <button class="btn-ghost mono" type="button" @click="handleLogout">EXIT</button>
         </div>
       </header>
 
-      <main class="content tech-grid">
+      <main class="content mesh noise">
         <router-view />
       </main>
     </div>
@@ -89,9 +99,9 @@ export default {
   methods: {
     async handleLogout() {
       try {
-        await logoutApi()   // 通知后端作废 token（失败也不影响本地退出）
+        await logoutApi()
       } catch (e) {
-        // 忽略退出接口的错误
+        // 忽略退出接口错误
       }
       this.$store.commit("clearUserInfo")
       this.$router.push("/login")
@@ -101,129 +111,134 @@ export default {
 </script>
 
 <style scoped>
-.layout { display: flex; height: 100vh; overflow: hidden; }
+.layout { display: flex; height: 100vh; overflow: hidden; background: var(--bg); }
 
 /* ---------------- 侧栏 ---------------- */
 .aside {
-  width: 220px;
+  width: 232px;
   flex-shrink: 0;
   background: var(--bg);
   border-right: 1px solid var(--line);
   display: flex;
   flex-direction: column;
-  position: relative;
+  padding: 18px 14px 14px;
 }
-.aside::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  right: -1px;
-  width: 2px;
-  height: 64px;
-  background: var(--accent);
-}
-.logo {
-  height: 64px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 0 16px;
-  border-bottom: 1px solid var(--line);
-}
-.logo-mark {
-  width: 32px;
-  height: 32px;
-  background: var(--accent);
+.brand { display: flex; align-items: center; gap: 10px; padding: 0 6px 18px; }
+.brand-mark {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: linear-gradient(150deg, var(--accent), var(--accent-2));
   color: #fff;
-  font-family: var(--mono);
-  font-weight: 700;
-  font-size: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  clip-path: polygon(0 0, 100% 0, 100% 72%, 72% 100%, 0 100%);
+  font-weight: 700;
+  font-size: 15px;
+  box-shadow: 0 6px 14px -4px rgba(10, 132, 255, .5);
 }
-.logo-text { display: flex; flex-direction: column; line-height: 1.35; }
-.logo-title { font-size: 12px; font-weight: 700; letter-spacing: 1px; color: var(--text); }
-.logo-sub { font-size: 11px; color: var(--text-3); }
+.brand-text { display: flex; flex-direction: column; line-height: 1.3; }
+.brand-text strong { font-size: 13px; letter-spacing: .04em; }
+.brand-text small { font-size: 11px; color: var(--text-3); }
 
-.nav-label {
-  padding: 16px 16px 8px;
-  font-size: 10px;
-  color: var(--text-3);
-  letter-spacing: 1px;
-}
-.nav { flex: 1; padding: 0 8px; overflow-y: auto; }
+.nav-group { padding: 6px; margin-bottom: 6px; }
+
+.nav { flex: 1; display: flex; flex-direction: column; gap: 2px; overflow-y: auto; }
 .nav-item {
+  position: relative;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   height: 42px;
-  padding: 0 10px;
-  margin-bottom: 4px;
+  padding: 0 10px 0 14px;
+  border-radius: var(--r-md);
   color: var(--text-2);
   text-decoration: none;
-  font-size: 13px;
-  border: 1px solid transparent;
-  border-left: 2px solid transparent;
-  transition: all .15s;
+  font-size: 13.5px;
+  transition: background var(--dur-1) var(--ease-2), color var(--dur-1) var(--ease-2);
 }
-.nav-item:hover { background: var(--bg-sub); color: var(--text); }
-.nav-item.active {
-  background: var(--accent-soft);
-  border-color: rgba(0, 166, 224, .25);
-  border-left: 2px solid var(--accent);
-  color: var(--accent);
-  font-weight: 600;
+.nav-rail {
+  position: absolute;
+  left: 4px;
+  top: 50%;
+  width: 3px;
+  height: 0;
+  border-radius: 2px;
+  background: var(--accent);
+  transform: translateY(-50%);
+  transition: height var(--dur-2) var(--ease);
 }
-.nav-index { font-size: 10px; opacity: .55; }
-.nav-icon { font-size: 15px; }
+.nav-item:hover { background: var(--bg-inset); color: var(--text); }
+.nav-item.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.nav-item.active .nav-rail { height: 18px; }
+.nav-icon { font-size: 16px; }
 .nav-title { flex: 1; }
+.nav-index { font-size: 10px; color: var(--text-3); opacity: .8; }
 
-.aside-footer { border-top: 1px solid var(--line); padding: 12px 16px; }
-.status-line {
-  font-size: 10px;
-  color: var(--text-3);
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  letter-spacing: .5px;
-}
-.dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
-.dot.ok { background: var(--ok); box-shadow: 0 0 0 3px rgba(38, 179, 107, .15); }
-.ver { font-size: 10px; color: var(--text-3); margin-top: 5px; }
-
-/* ---------------- 右侧 ---------------- */
-.main-wrap { flex: 1; display: flex; flex-direction: column; min-width: 0; }
-.header {
-  height: 64px;
-  flex-shrink: 0;
-  background: var(--bg);
-  border-bottom: 1px solid var(--line);
+.aside-foot {
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 20px;
 }
-.header-left { display: flex; flex-direction: column; gap: 1px; }
-.crumb { font-size: 10px; color: var(--text-3); letter-spacing: .5px; }
-.page-title { font-size: 16px; font-weight: 600; color: var(--text); }
-.header-right { display: flex; align-items: center; gap: 14px; }
-.role { font-size: 11px; color: var(--accent); letter-spacing: 1px; }
-.user { display: flex; align-items: center; gap: 8px; }
-.avatar { background: var(--accent); color: #fff; font-size: 12px; border-radius: 2px; }
-.username { font-size: 12px; color: var(--text-2); }
-.logout {
+.status { display: flex; align-items: center; gap: 7px; font-size: 10px; color: var(--text-3); }
+.dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--ok);
+  box-shadow: 0 0 0 3px rgba(23, 166, 115, .16);
+}
+
+/* ---------------- 主区 ---------------- */
+.main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  height: 68px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 26px;
+  border-bottom: 1px solid var(--line);
+}
+.page-title { font-size: 18px; font-weight: 650; letter-spacing: -.01em; margin-top: 2px; }
+
+.topbar-right { display: flex; align-items: center; gap: 18px; }
+.role-chip {
+  font-size: 10px;
+  letter-spacing: .1em;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-line);
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+.who { display: flex; align-items: center; gap: 9px; }
+.avatar { background: linear-gradient(150deg, var(--accent), var(--accent-2)); color: #fff; font-size: 13px; }
+.who-text { display: flex; flex-direction: column; line-height: 1.25; }
+.who-text strong { font-size: 13px; font-weight: 600; }
+
+.btn-ghost {
   font-size: 11px;
-  letter-spacing: 1px;
+  letter-spacing: .1em;
   color: var(--text-2);
   background: transparent;
   border: 1px solid var(--line-2);
-  padding: 5px 12px;
+  border-radius: var(--r-sm);
+  padding: 6px 12px;
   cursor: pointer;
-  transition: all .15s;
+  transition: all var(--dur-1) var(--ease-2);
 }
-.logout:hover { color: #fff; background: var(--danger); border-color: var(--danger); }
+.btn-ghost:hover { color: var(--danger); border-color: rgba(229, 72, 77, .4); background: rgba(229, 72, 77, .06); }
 
-.content { flex: 1; overflow-y: auto; padding: 18px; background: var(--bg-sub); }
+.content {
+  position: relative;
+  flex: 1;
+  overflow-y: auto;
+  padding: 26px;
+}
+.content :deep(.el-card) { border: 1px solid var(--line); box-shadow: var(--shadow-xs); }
 </style>

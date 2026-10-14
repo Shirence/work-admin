@@ -1,65 +1,57 @@
 <template>
-  <div class="login-page tech-grid">
-    <div class="login-box hud">
-      <div class="scanline"></div>
+  <div class="auth mesh noise">
+    <ParticleField class="bg-fx" />
 
-      <div class="box-head mono">
-        <span class="prompt">&gt;</span>
-        <span>NEW_ACCOUNT_SETUP</span>
-        <span class="cursor"></span>
-      </div>
+    <div class="card reveal is-visible">
+      <header class="card-head">
+        <div class="logo">W</div>
+        <div>
+          <h1>创建账号</h1>
+          <p class="u-label">Create your account</p>
+        </div>
+      </header>
 
-      <div class="brand">
-        <div class="brand-mark">W</div>
-        <h1>注册账号</h1>
-        <p class="mono">WORK_ADMIN // SIGN UP</p>
-      </div>
+      <el-form ref="formRef" :model="form" :rules="rules" size="large" class="form" @submit.prevent>
+        <div class="field">
+          <label class="u-label">用户名</label>
+          <el-input v-model="form.username" placeholder="4-20 位字母 / 数字 / 下划线" clearable />
+        </div>
+        <div class="field">
+          <label class="u-label">邮箱</label>
+          <el-input v-model="form.email" placeholder="you@example.com" clearable />
+        </div>
+        <div class="row">
+          <div class="field">
+            <label class="u-label">密码</label>
+            <el-input v-model="form.password" type="password" placeholder="6-32 位，含字母和数字" show-password />
+          </div>
+          <div class="field">
+            <label class="u-label">确认密码</label>
+            <el-input v-model="form.confirmPassword" type="password" placeholder="再次输入" show-password @keyup.enter="handleRegister" />
+          </div>
+        </div>
+        <button class="primary mono" type="button" :disabled="loading" @click="handleRegister">
+          {{ loading ? 'CREATING...' : 'CREATE ACCOUNT' }}
+        </button>
+      </el-form>
 
-      <div class="form-wrap">
-        <el-form ref="formRef" :model="form" :rules="rules" size="large" @submit.prevent>
-          <el-form-item prop="username">
-            <el-input v-model="form.username" placeholder="USERNAME / 用户名" clearable />
-          </el-form-item>
-          <el-form-item prop="email">
-            <el-input v-model="form.email" placeholder="EMAIL / 邮箱" clearable />
-          </el-form-item>
-          <el-form-item prop="password">
-            <el-input v-model="form.password" type="password" placeholder="PASSWORD / 密码" show-password />
-          </el-form-item>
-          <el-form-item prop="confirmPassword">
-            <el-input
-              v-model="form.confirmPassword"
-              type="password"
-              placeholder="CONFIRM / 确认密码"
-              show-password
-              @keyup.enter="handleRegister"
-            />
-          </el-form-item>
-          <button class="login-btn mono" type="button" :disabled="loading" @click="handleRegister">
-            {{ loading ? 'SUBMITTING...' : 'EXECUTE REGISTER' }}
-          </button>
-        </el-form>
-      </div>
-
-      <div class="tips mono">
-        <div><span class="k">USER</span>4-20 位字母 / 数字 / 下划线</div>
-        <div><span class="k">PASS</span>6-32 位，需同时含字母和数字</div>
-      </div>
-
-      <div class="foot mono">
-        已有账号？<router-link to="/login">返回登录 / SIGN IN</router-link>
-      </div>
+      <footer class="card-foot">
+        <span class="u-label">注册后默认拥有只读权限</span>
+        <router-link class="link" to="/login">← 返回登录</router-link>
+      </footer>
     </div>
 
-    <div class="copyright mono">VUE3 + ELEMENT-PLUS + SPRING-BOOT</div>
+    <p class="u-label copyright">Vue 3 · Element Plus · Spring Boot</p>
   </div>
 </template>
 
 <script>
 import { register as registerApi } from '../api/auth'
+import ParticleField from '../components/ParticleField.vue'
 
 export default {
   name: "Register",
+  components: { ParticleField },
   data() {
     const checkUsername = (rule, value, callback) => {
       if (!/^[A-Za-z0-9_]{4,20}$/.test(value || '')) {
@@ -84,12 +76,7 @@ export default {
     }
     return {
       loading: false,
-      form: {
-        username: '',
-        email: '',
-        password: '',
-        confirmPassword: ''
-      },
+      form: { username: '', email: '', password: '', confirmPassword: '' },
       rules: {
         username: [
           { required: true, message: '请输入用户名', trigger: 'blur' },
@@ -138,92 +125,98 @@ export default {
 </script>
 
 <style scoped>
-.login-page {
+.auth {
+  position: relative;
   height: 100vh;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: var(--bg-sub);
-}
-.login-box {
-  width: 400px;
-  background: var(--bg);
-  border: 1px solid var(--line);
-  box-shadow: 0 10px 40px rgba(16, 26, 36, .09);
   overflow: hidden;
 }
-.box-head {
-  height: 34px;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 0 14px;
-  background: var(--bg-sub);
-  border-bottom: 1px solid var(--line);
-  font-size: 11px;
-  letter-spacing: 1px;
-  color: var(--text-2);
-}
-.prompt { color: var(--accent); font-weight: 700; }
+.bg-fx { z-index: 0; }
 
-.brand { text-align: center; padding: 22px 0 14px; }
-.brand-mark {
-  width: 44px;
-  height: 44px;
-  margin: 0 auto 10px;
-  background: var(--accent);
+.card {
+  position: relative;
+  z-index: 1;
+  width: 440px;
+  padding: 30px 32px 22px;
+  background: rgba(255, 255, 255, .82);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border: 1px solid rgba(255, 255, 255, .9);
+  border-radius: 18px;
+  box-shadow: var(--shadow-lg);
+}
+.card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 18px;
+  padding: 1px;
+  background: linear-gradient(150deg, rgba(10, 132, 255, .35), rgba(124, 92, 255, .18), transparent 60%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.card-head { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; }
+.logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 11px;
+  background: linear-gradient(150deg, var(--accent), var(--accent-2));
   color: #fff;
-  font-family: var(--mono);
-  font-size: 22px;
   font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
-  clip-path: polygon(0 0, 100% 0, 100% 72%, 72% 100%, 0 100%);
+  box-shadow: 0 8px 18px -6px rgba(10, 132, 255, .6);
 }
-.brand h1 { font-size: 19px; color: var(--text); margin-bottom: 5px; letter-spacing: 1px; }
-.brand p { font-size: 10px; color: var(--text-3); letter-spacing: 2px; }
+.card-head h1 { font-size: 18px; font-weight: 650; letter-spacing: -.01em; margin-bottom: 3px; }
 
-.form-wrap { padding: 0 26px; }
-.login-box :deep(.el-form-item) { margin-bottom: 16px; }
-.login-btn {
-  width: 100%;
-  height: 42px;
-  background: var(--accent);
-  color: #fff;
+.form { display: flex; flex-direction: column; gap: 14px; }
+.field { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0; }
+.row { display: flex; gap: 12px; }
+.field :deep(.el-input__wrapper) {
+  border-radius: var(--r-md);
+  box-shadow: 0 0 0 1px var(--line-2) inset;
+  transition: box-shadow var(--dur-1) var(--ease-2);
+}
+.field :deep(.el-input__wrapper:hover) { box-shadow: 0 0 0 1px var(--line-3) inset; }
+.field :deep(.el-input__wrapper.is-focus) { box-shadow: 0 0 0 1px var(--accent) inset, 0 0 0 3px var(--accent-soft); }
+.form :deep(.el-form-item) { margin-bottom: 0; }
+
+.primary {
+  height: 44px;
+  margin-top: 8px;
   border: none;
-  cursor: pointer;
-  font-size: 13px;
+  border-radius: var(--r-md);
+  background: var(--text);
+  color: #fff;
+  font-size: 12.5px;
   font-weight: 600;
-  letter-spacing: 2px;
-  transition: background .15s;
+  letter-spacing: .1em;
+  cursor: pointer;
+  transition: transform var(--dur-1) var(--ease), box-shadow var(--dur-2) var(--ease), background var(--dur-1);
+  box-shadow: 0 1px 2px rgba(13, 21, 32, .12);
 }
-.login-btn:hover:not(:disabled) { background: #008cc0; }
-.login-btn:disabled { opacity: .65; cursor: not-allowed; }
+.primary:hover:not(:disabled) { background: #16202c; box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.primary:active:not(:disabled) { transform: translateY(0) scale(.995); }
+.primary:disabled { opacity: .55; cursor: not-allowed; }
 
-.tips {
-  margin: 16px 26px 0;
-  padding: 12px 0 0;
-  border-top: 1px dashed var(--line);
-  font-size: 11px;
-  color: var(--text-3);
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-.tips .k { display: inline-block; width: 46px; color: var(--accent); }
-
-.foot {
-  margin: 14px 26px 20px;
-  padding-top: 12px;
+.card-foot {
+  margin-top: 20px;
+  padding-top: 15px;
   border-top: 1px solid var(--line);
-  font-size: 11px;
-  color: var(--text-3);
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
 }
-.foot a { color: var(--accent); text-decoration: none; }
-.foot a:hover { text-decoration: underline; }
+.link { font-size: 12px; color: var(--accent); text-decoration: none; white-space: nowrap; }
+.link:hover { text-decoration: underline; }
 
-.copyright { margin-top: 18px; font-size: 10px; color: var(--text-3); letter-spacing: 2px; }
+.copyright { position: relative; z-index: 1; margin-top: 20px; }
 </style>

@@ -18,6 +18,7 @@ import {
   Menu,
   DataLine
 } from '@element-plus/icons-vue'
+import reveal from './directives/reveal'
 
 // 是否启用 MockJS 假数据。默认关闭，直接走 Spring Boot 后端。
 // 需要离线演示时，把 .env 里的 VUE_APP_USE_MOCK 设为 true。
@@ -44,5 +45,8 @@ const icons = {
   DataLine
 }
 Object.keys(icons).forEach(name => app.component(name, icons[name]))
+
+// v-reveal：滚动进入视口时淡入
+app.directive('reveal', reveal)
 
 app.use(store).use(router).use(ElementPlus).mount('#app')

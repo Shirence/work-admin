@@ -1,45 +1,47 @@
 <template>
-  <div v-loading="loading">
-    <div class="sec-title mono">// OVERVIEW</div>
+  <div v-loading="loading" class="page">
+    <header class="page-head">
+      <div>
+        <h2>概览</h2>
+        <p class="u-hint">关键指标与趋势，数据来自后端接口</p>
+      </div>
+      <span class="u-label">Updated just now</span>
+    </header>
 
-    <el-row :gutter="14">
-      <el-col v-for="s in statCards" :key="s.label" :xs="12" :sm="12" :md="6">
-        <div class="stat-card hud" :style="{ '--c': s.color }">
-          <div class="stat-head">
-            <span class="stat-code mono">{{ s.code }}</span>
-            <el-icon class="stat-icon"><component :is="s.icon" /></el-icon>
-          </div>
-          <div class="stat-value mono">{{ s.value }}</div>
-          <div class="stat-label">{{ s.label }}</div>
-          <div class="stat-bar"></div>
+    <div class="bento">
+      <article
+        v-for="(s, i) in statCards"
+        :key="s.label"
+        v-reveal="i * 70"
+        class="tile tile-stat"
+      >
+        <div class="tile-top">
+          <span class="u-label">{{ s.code }}</span>
+          <el-icon class="tile-icon" :style="{ color: s.color }">
+            <component :is="s.icon" />
+          </el-icon>
         </div>
-      </el-col>
-    </el-row>
+        <div class="tile-value">{{ s.value }}</div>
+        <div class="tile-label">{{ s.label }}</div>
+        <span class="tile-accent" :style="{ background: s.color }"></span>
+      </article>
 
-    <div class="sec-title mono">// ANALYTICS</div>
+      <article v-reveal="280" class="tile tile-chart col-8">
+        <div class="tile-head">
+          <h3>月度任务完成情况</h3>
+          <span class="u-label">6 months</span>
+        </div>
+        <div ref="barRef" class="chart" style="height:300px"></div>
+      </article>
 
-    <el-row :gutter="14">
-      <el-col :xs="24" :md="14">
-        <section class="panel hud">
-          <header class="panel-head">
-            <span class="panel-bar"></span>
-            <span class="panel-title">月度任务完成情况</span>
-            <span class="panel-tag mono">STATIC</span>
-          </header>
-          <div ref="barRef" class="chart" style="height:320px"></div>
-        </section>
-      </el-col>
-      <el-col :xs="24" :md="10">
-        <section class="panel hud">
-          <header class="panel-head">
-            <span class="panel-bar"></span>
-            <span class="panel-title">用户角色分布</span>
-            <span class="panel-tag mono">LIVE</span>
-          </header>
-          <div ref="pieRef" class="chart" style="height:320px"></div>
-        </section>
-      </el-col>
-    </el-row>
+      <article v-reveal="340" class="tile tile-chart col-4">
+        <div class="tile-head">
+          <h3>用户角色分布</h3>
+          <span class="u-label">realtime</span>
+        </div>
+        <div ref="pieRef" class="chart" style="height:300px"></div>
+      </article>
+    </div>
   </div>
 </template>
 
@@ -51,7 +53,7 @@ export default {
   name: "Dashboard",
   data() {
     return {
-      users: [],        // 真实数据源：用户列表
+      users: [],
       loading: false,
       barChart: null,
       pieChart: null
@@ -72,10 +74,10 @@ export default {
     },
     statCards() {
       return [
-        { code: 'USR.TOTAL', label: '用户总数', value: this.userCount, icon: 'UserFilled', color: '#00a6e0' },
-        { code: 'TASK.PENDING', label: '待办任务', value: 18, icon: 'Clock', color: '#f0a020' },
-        { code: 'TASK.DONE', label: '已完成任务', value: 421, icon: 'CircleCheck', color: '#26b36b' },
-        { code: 'SYS.MSG', label: '系统消息', value: 6, icon: 'Bell', color: '#8b5cf6' }
+        { code: 'USR.TOTAL', label: '用户总数', value: this.userCount, icon: 'UserFilled', color: '#0a84ff' },
+        { code: 'TASK.PENDING', label: '待办任务', value: 18, icon: 'Clock', color: '#d99100' },
+        { code: 'TASK.DONE', label: '已完成任务', value: 421, icon: 'CircleCheck', color: '#17a673' },
+        { code: 'SYS.MSG', label: '系统消息', value: 6, icon: 'Bell', color: '#7c5cff' }
       ]
     }
   },
@@ -112,34 +114,34 @@ export default {
     initBarChart() {
       this.barChart = echarts.init(this.$refs.barRef)
       this.barChart.setOption({
-        tooltip: { trigger: 'axis' },
-        legend: { data: ['已完成', '待办'], top: 0, icon: 'rect' },
-        grid: { left: '3%', right: '4%', bottom: '3%', top: 42, containLabel: true },
+        tooltip: { trigger: 'axis', borderWidth: 0, backgroundColor: 'rgba(13,21,32,.92)', textStyle: { color: '#fff', fontSize: 12 } },
+        legend: { data: ['已完成', '待办'], top: 0, right: 0, icon: 'roundRect', itemWidth: 10, itemHeight: 10, textStyle: { color: '#5a6672', fontSize: 12 } },
+        grid: { left: 8, right: 8, bottom: 4, top: 44, containLabel: true },
         xAxis: {
           type: 'category',
           data: ['1月', '2月', '3月', '4月', '5月', '6月'],
-          axisLine: { lineStyle: { color: '#c4d0db' } },
+          axisLine: { lineStyle: { color: '#e3e8ee' } },
           axisTick: { show: false },
-          axisLabel: { color: '#93a1af', fontFamily: 'monospace', fontSize: 11 }
+          axisLabel: { color: '#98a2ae', fontSize: 11 }
         },
         yAxis: {
           type: 'value',
-          splitLine: { lineStyle: { color: '#eef2f6', type: 'dashed' } },
-          axisLabel: { color: '#93a1af', fontFamily: 'monospace', fontSize: 11 }
+          splitLine: { lineStyle: { color: '#f2f5f8' } },
+          axisLabel: { color: '#98a2ae', fontSize: 11 }
         },
         series: [
           {
             name: '已完成',
             type: 'bar',
             barWidth: 12,
-            itemStyle: { color: '#00a6e0' },
+            itemStyle: { color: '#0a84ff', borderRadius: [4, 4, 0, 0] },
             data: [120, 200, 150, 80, 70, 110]
           },
           {
             name: '待办',
             type: 'bar',
             barWidth: 12,
-            itemStyle: { color: '#f0a020' },
+            itemStyle: { color: '#d99100', borderRadius: [4, 4, 0, 0] },
             data: [20, 32, 18, 30, 25, 12]
           }
         ]
@@ -149,18 +151,18 @@ export default {
     initPieChart() {
       this.pieChart = echarts.init(this.$refs.pieRef)
       this.pieChart.setOption({
-        tooltip: { trigger: 'item' },
-        legend: { bottom: 0, icon: 'rect', itemWidth: 10, itemHeight: 10 },
-        color: ['#00a6e0', '#26b36b'],
+        tooltip: { trigger: 'item', borderWidth: 0, backgroundColor: 'rgba(13,21,32,.92)', textStyle: { color: '#fff', fontSize: 12 } },
+        legend: { bottom: 0, icon: 'circle', itemWidth: 8, itemHeight: 8, textStyle: { color: '#5a6672', fontSize: 12 } },
+        color: ['#0a84ff', '#17a673'],
         series: [
           {
             name: '角色分布',
             type: 'pie',
-            radius: ['50%', '70%'],
+            radius: ['56%', '76%'],
             center: ['50%', '44%'],
-            itemStyle: { borderColor: '#fff', borderWidth: 2 },
-            label: { formatter: '{b}\n{c}', color: '#56687a', fontFamily: 'monospace', fontSize: 11 },
-            labelLine: { lineStyle: { color: '#c4d0db' } },
+            itemStyle: { borderColor: '#fff', borderWidth: 3 },
+            label: { formatter: '{b}\n{c}', color: '#5a6672', fontSize: 11, lineHeight: 16 },
+            labelLine: { lineStyle: { color: '#e3e8ee' } },
             data: []
           }
         ]
@@ -191,94 +193,57 @@ export default {
 </script>
 
 <style scoped>
-.sec-title {
-  font-size: 11px;
-  color: var(--text-3);
-  letter-spacing: 1.5px;
-  margin: 4px 0 10px;
+.page { display: flex; flex-direction: column; gap: 20px; }
+.page-head { display: flex; align-items: flex-end; justify-content: space-between; }
+.page-head h2 { font-size: 22px; font-weight: 650; letter-spacing: -.02em; margin-bottom: 4px; }
+
+/* Bento 栅格 */
+.bento {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 16px;
+}
+.tile {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-xs);
+  transition: transform var(--dur-2) var(--ease), box-shadow var(--dur-2) var(--ease), border-color var(--dur-2) var(--ease-2);
+}
+.tile:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--line-2);
 }
 
-/* ---------- 统计卡 ---------- */
-.stat-card {
-  background: var(--bg);
-  border: 1px solid var(--line);
-  padding: 16px 18px 14px;
-  margin-bottom: 14px;
-  position: relative;
-  transition: all .18s;
-}
-.stat-card:hover {
-  border-color: var(--c);
-  box-shadow: 0 6px 20px rgba(16, 26, 36, .07);
-}
-.stat-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 10px;
-}
-.stat-code {
-  font-size: 10px;
-  letter-spacing: 1px;
-  color: var(--text-3);
-}
-.stat-icon {
-  font-size: 18px;
-  color: var(--c);
-  opacity: .85;
-}
-.stat-value {
-  font-size: 28px;
-  font-weight: 700;
-  line-height: 1.1;
-  color: var(--text);
-  letter-spacing: 1px;
-}
-.stat-label {
-  font-size: 12px;
-  color: var(--text-2);
-  margin-top: 4px;
-}
-.stat-bar {
+.tile-stat { grid-column: span 3; padding: 18px 18px 16px; overflow: hidden; }
+.tile-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.tile-icon { font-size: 17px; opacity: .9; }
+.tile-value { font-size: 30px; font-weight: 680; letter-spacing: -.02em; line-height: 1.05; }
+.tile-label { font-size: 13px; color: var(--text-2); margin-top: 5px; }
+.tile-accent {
   position: absolute;
   left: 0;
-  top: 0;
+  top: 18px;
+  bottom: 18px;
   width: 3px;
-  height: 100%;
-  background: var(--c);
+  border-radius: 0 3px 3px 0;
+  opacity: .9;
 }
 
-/* ---------- 图表面板 ---------- */
-.panel {
-  background: var(--bg);
-  border: 1px solid var(--line);
-  margin-bottom: 14px;
-}
-.panel-head {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--line);
-}
-.panel-bar {
-  width: 3px;
-  height: 13px;
-  background: var(--accent);
-}
-.panel-title {
-  flex: 1;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text);
-}
-.panel-tag {
-  font-size: 9px;
-  letter-spacing: 1px;
-  color: var(--accent);
-  border: 1px solid rgba(0, 166, 224, .35);
-  background: var(--accent-soft);
-  padding: 1px 6px;
-}
+.tile-chart { padding: 18px 18px 8px; }
+.col-8 { grid-column: span 8; }
+.col-4 { grid-column: span 4; }
+.tile-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.tile-head h3 { font-size: 14px; font-weight: 600; }
 .chart { width: 100%; }
+
+@media (max-width: 1200px) {
+  .tile-stat { grid-column: span 6; }
+  .col-8, .col-4 { grid-column: span 12; }
+}
+@media (max-width: 680px) {
+  .tile-stat { grid-column: span 12; }
+}
 </style>

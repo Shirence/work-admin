@@ -1,20 +1,20 @@
 <template>
-  <div>
-    <div class="page-head">
+  <div class="page">
+    <header class="page-head">
       <div>
-        <div class="crumb mono">// USER.MANAGEMENT</div>
         <h2>用户管理</h2>
+        <p class="u-hint">维护系统用户信息，支持搜索、新增、编辑与删除</p>
       </div>
-      <div class="head-tag mono">{{ tableData.length }} RECORDS</div>
-    </div>
+      <span class="u-label">{{ tableData.length }} records</span>
+    </header>
 
-    <section class="panel hud">
+    <section v-reveal class="panel">
       <div class="toolbar">
         <div class="toolbar-left">
           <el-input
             v-model="query.keyword"
             placeholder="搜索用户名"
-            class="search-input"
+            class="search"
             clearable
             @keyup.enter="handleSearch"
             @clear="handleSearch"
@@ -29,7 +29,7 @@
         </div>
 
         <div class="toolbar-right">
-          <el-button v-if="can('user:add')" type="success" @click="openAddDialog">
+          <el-button v-if="can('user:add')" type="primary" plain @click="openAddDialog">
             <el-icon class="btn-icon"><Plus /></el-icon>新增用户
           </el-button>
           <el-button
@@ -40,7 +40,7 @@
             :disabled="selectedRows.length === 0"
             @click="handleBatchDelete"
           >
-            批量删除（已选 {{ selectedRows.length }} 项）
+            批量删除（{{ selectedRows.length }}）
           </el-button>
         </div>
       </div>
@@ -49,45 +49,55 @@
         ref="tableRef"
         v-loading="loading"
         :data="tableData"
-        class="user-table"
-        :header-cell-style="{ background: '#f4f7fa', color: '#56687a', fontWeight: '600', fontSize: '12px' }"
+        class="table"
+        :header-cell-style="{ background: '#fafbfc', color: '#98a2ae', fontWeight: '600', fontSize: '11px', letterSpacing: '.08em', textTransform: 'uppercase' }"
         @selection-change="handleSelectionChange"
       >
-        <el-table-column type="selection" width="50" />
+        <el-table-column type="selection" width="46" />
         <el-table-column label="ID" prop="id" width="80">
           <template #default="{ row }">
-            <span class="mono id-cell">{{ row.id }}</span>
+            <span class="mono dim">{{ row.id }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="用户名" prop="username" min-width="120" />
+        <el-table-column label="用户名" prop="username" min-width="130">
+          <template #default="{ row }">
+            <div class="user-cell">
+              <span class="mini-avatar">{{ (row.username || 'U').charAt(0) }}</span>
+              <span>{{ row.username }}</span>
+            </div>
+          </template>
+        </el-table-column>
         <el-table-column label="手机号" prop="phone" min-width="140">
           <template #default="{ row }">
-            <span class="mono">{{ row.phone }}</span>
+            <span class="mono dim">{{ row.phone }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="角色" prop="role" width="130">
+        <el-table-column label="角色" prop="role" width="120">
           <template #default="{ row }">
-            <span class="role-chip mono" :class="row.role === 'admin' ? 'is-admin' : 'is-user'">
-              {{ row.role === 'admin' ? 'ADMIN' : 'USER' }}
+            <span class="chip" :class="row.role === 'admin' ? 'chip-admin' : 'chip-user'">
+              {{ row.role === 'admin' ? '管理员' : '普通用户' }}
             </span>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="150" align="center">
+        <el-table-column label="操作" width="140" align="right">
           <template #default="{ row }">
             <el-button v-if="can('user:edit')" link type="primary" @click="openEditDialog(row)">编辑</el-button>
             <el-button v-if="can('user:delete')" link type="danger" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
+        <template #empty>
+          <el-empty description="暂无数据" :image-size="72" />
+        </template>
       </el-table>
-
-      <UserFormDialog
-        v-model="dialogVisible"
-        :title="dialogTitle"
-        :row-data="currentRow"
-        :submitting="submitting"
-        @submit="submitForm"
-      />
     </section>
+
+    <UserFormDialog
+      v-model="dialogVisible"
+      :title="dialogTitle"
+      :row-data="currentRow"
+      :submitting="submitting"
+      @submit="submitForm"
+    />
   </div>
 </template>
 
@@ -221,27 +231,16 @@ export default {
 </script>
 
 <style scoped>
-.page-head {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  margin-bottom: 14px;
-}
-.crumb { font-size: 10px; color: var(--text-3); letter-spacing: 1.5px; margin-bottom: 3px; }
-.page-head h2 { font-size: 19px; font-weight: 600; color: var(--text); }
-.head-tag {
-  font-size: 10px;
-  letter-spacing: 1px;
-  color: var(--accent);
-  border: 1px solid rgba(0, 166, 224, .35);
-  background: var(--accent-soft);
-  padding: 3px 8px;
-}
+.page { display: flex; flex-direction: column; gap: 20px; }
+.page-head { display: flex; align-items: flex-end; justify-content: space-between; }
+.page-head h2 { font-size: 22px; font-weight: 650; letter-spacing: -.02em; margin-bottom: 4px; }
 
 .panel {
-  background: var(--bg);
+  background: var(--surface);
   border: 1px solid var(--line);
-  padding: 16px;
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-xs);
+  padding: 18px;
 }
 
 .toolbar {
@@ -249,26 +248,43 @@ export default {
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 10px;
-  margin-bottom: 14px;
+  gap: 12px;
+  margin-bottom: 16px;
 }
-.toolbar-left { display: flex; align-items: center; gap: 10px; }
-.toolbar-right { display: flex; align-items: center; gap: 10px; }
-.search-input { width: 240px; }
+.toolbar-left, .toolbar-right { display: flex; align-items: center; gap: 10px; }
+.search { width: 250px; }
 .btn-icon { margin-right: 4px; }
 
-.user-table :deep(.el-table__inner-wrapper::before) { display: none; }
-.user-table :deep(td.el-table__cell) { border-bottom: 1px solid #eef2f6; }
-.user-table :deep(.el-table__row:hover > td) { background: var(--accent-soft) !important; }
+.table :deep(.el-table__inner-wrapper::before) { display: none; }
+.table :deep(td.el-table__cell) { border-bottom: 1px solid var(--line); padding: 12px 0; }
+.table :deep(.el-table__row) { transition: background var(--dur-1) var(--ease-2); }
+.table :deep(.el-table__row:hover > td) { background: var(--accent-soft) !important; }
 
-.id-cell { color: var(--text-3); font-size: 12px; }
-.role-chip {
-  display: inline-block;
-  font-size: 10px;
-  letter-spacing: 1px;
-  padding: 2px 8px;
-  border: 1px solid;
+.user-cell { display: flex; align-items: center; gap: 9px; }
+.mini-avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  background: var(--bg-inset);
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
-.role-chip.is-admin { color: #00a6e0; border-color: rgba(0, 166, 224, .4); background: var(--accent-soft); }
-.role-chip.is-user { color: #56687a; border-color: #dce4ec; background: #f4f7fa; }
+.mono { font-family: var(--mono); font-size: 12px; }
+.dim { color: var(--text-3); }
+
+.chip {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+.chip-admin { color: var(--accent); background: var(--accent-soft); border-color: var(--accent-line); }
+.chip-user { color: var(--text-2); background: var(--bg-inset); border-color: var(--line-2); }
 </style>
