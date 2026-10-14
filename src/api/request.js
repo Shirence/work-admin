@@ -18,6 +18,16 @@ service.interceptors.response.use(
   response => {
     const result = response.data
     if (result && result.code !== 200) {
+      // 401：登录态失效，清掉本地状态并回登录页。
+      // 登录接口自身的 401（密码错误）不跳转，交给页面提示。
+      const url = (response.config && response.config.url) || ''
+      if (result.code === 401 && !url.includes('/login')) {
+        localStorage.removeItem('token')
+        localStorage.removeItem('userInfo')
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login'
+        }
+      }
       return Promise.reject(new Error(result.msg || '请求失败'))
     }
     return result

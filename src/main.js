@@ -6,9 +6,12 @@ import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
 import { House, User, Plus } from '@element-plus/icons-vue'
 
-// 第 4 课：引入 Mock，拦截 /api 开头的请求。
-// 第 10 课接入真实后端时删除这一行并重新构建。
-import './mock'
+// 是否启用 MockJS 假数据。默认关闭，直接走 Spring Boot 后端。
+// 需要离线演示时，把 .env 里的 VUE_APP_USE_MOCK 设为 true。
+if (process.env.VUE_APP_USE_MOCK === 'true') {
+  // eslint-disable-next-line global-require
+  require('./mock')
+}
 
 const app = createApp(App)
 

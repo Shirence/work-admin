@@ -36,6 +36,8 @@
 </template>
 
 <script>
+import { logout as logoutApi } from '../api/auth'
+
 export default {
   name: "Layout",
   computed: {
@@ -52,8 +54,12 @@ export default {
     }
   },
   methods: {
-    handleLogout() {
-      // 清空登录信息，跳转到登录页
+    async handleLogout() {
+      try {
+        await logoutApi()   // 通知后端作废 token（失败也不影响本地退出）
+      } catch (e) {
+        // 忽略退出接口的错误
+      }
       this.$store.commit("clearUserInfo")
       this.$router.push("/login")
     }

@@ -2,15 +2,15 @@
   <div class="login-container">
     <el-card class="login-card">
       <h2 style="text-align:center;margin-bottom:20px">工作中台登录</h2>
-      <el-form ref="loginFormRef" :model="loginForm" label-width="80px">
+      <el-form ref="loginFormRef" :model="loginForm" label-width="80px" @submit.prevent>
         <el-form-item label="账号">
-          <el-input v-model="loginForm.username"></el-input>
+          <el-input v-model="loginForm.username" placeholder="admin / manager / viewer" @keyup.enter="handleLogin" />
         </el-form-item>
         <el-form-item label="密码">
-          <el-input v-model="loginForm.password" type="password"></el-input>
+          <el-input v-model="loginForm.password" type="password" placeholder="123456" show-password @keyup.enter="handleLogin" />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" @click="login" style="width:100%">登录</el-button>
+          <el-button type="primary" :loading="loading" @click="handleLogin" style="width:100%">登录</el-button>
         </el-form-item>
       </el-form>
       <p class="tips">演示账号：admin / manager / viewer，密码均为 123456</p>
@@ -19,10 +19,14 @@
 </template>
 
 <script>
+// 第 11 课：登录改为调用 Spring Boot 后端 POST /api/login
+import { login as loginApi } from '../api/auth'
+
 export default {
   name: "Login",
   data() {
     return {
+      loading: false,
       loginForm: {
         username: "",
         password: ""
@@ -30,23 +34,25 @@ export default {
     }
   },
   methods: {
-    // 第 9 课：三个演示账号，用角色 + 权限区分可访问范围
-    login() {
-      const accounts = {
-        admin: { role: 'admin', permissions: ['user:add', 'user:edit', 'user:delete'] },
-        manager: { role: 'manager', permissions: ['user:edit'] },
-        viewer: { role: 'viewer', permissions: [] }
-      }
+    async handleLogin() {
       const username = this.loginForm.username.trim()
-      const account = accounts[username]
-      if (!account || this.loginForm.password !== '123456') {
-        this.$message.error('账号或密码错误')
+      if (!username || !this.loginForm.password) {
+        this.$message.error('请输入账号和密码')
         return
       }
-      this.$store.commit('setUserInfo', { username, ...account })
-      this.$store.commit('setToken', `${username}-demo-token`)
-      this.$message.success('登录成功')
-      this.$router.push('/dashboard')
+      this.loading = true
+      try {
+        const res = await loginApi({ username, password: this.loginForm.password })
+        // 后端权威数据：token + { username, role, permissions }
+        this.$store.commit('setToken', res.data.token)
+        this.$store.commit('setUserInfo', res.data.userInfo)
+        this.$message.success(res.msg || '登录成功')
+        this.$router.push('/dashboard')
+      } catch (e) {
+        this.$message.error(e.message || '登录失败')
+      } finally {
+        this.loading = false
+      }
     }
   }
 }
