@@ -10,3 +10,6 @@ pnpm-debug.log*
 
 # 后端（Spring Boot）构建产物
 server/target/
+
+# 界面截图（本地预览用）
+screenshots/

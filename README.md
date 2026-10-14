@@ -68,6 +68,7 @@ npm run build:mock
 - 公共组件封装：`UserFormDialog`（自定义 `v-model`）、`AvatarUpload`、可选 `SearchBar`
 - 数据可视化：ECharts 柱状图 / 环形图，`mounted` 初始化、`resize`、`dispose`
 - 仪表盘实时统计：用户总数与角色分布来自 `getUserList()`，增删用户后重新进入会同步变化
+- 说明：仪表盘里的「待办任务 / 已完成任务 / 系统消息」和「月度任务完成情况」柱状图仍是静态演示数据，暂无对应后端接口
 - 本地头像预览：`el-upload` 手动上传 + `on-change` 校验 + Blob URL 释放
 - 按钮权限：`permissions` 配合 `v-if` 控制新增 / 编辑 / 删除
 - 路由懒加载：页面组件使用 `import()` 拆分 chunk

@@ -1,70 +1,87 @@
 <template>
-  <el-card>
-    <!-- 搜索区域 -->
-    <div class="search-box">
-      <el-input
-        v-model="query.keyword"
-        placeholder="搜索用户名"
-        style="width:220px"
-        @keyup.enter="handleSearch"
-      />
-      <el-button type="primary" @click="handleSearch">查询</el-button>
-      <!-- 第 9 课：按钮按 permissions 控制显示 -->
-      <el-button v-if="can('user:add')" type="success" @click="openAddDialog">新增用户</el-button>
-      <!-- 第 8 课：批量删除 -->
-      <el-button
-        v-if="can('user:delete')"
-        type="danger"
-        :loading="deleting"
-        :disabled="selectedRows.length === 0"
-        @click="handleBatchDelete"
-      >
-        批量删除（已选 {{ selectedRows.length }} 项）
-      </el-button>
+  <div>
+    <div class="page-header">
+      <h2>用户管理</h2>
+      <p>维护系统用户信息，支持搜索、新增、编辑与删除</p>
     </div>
 
-    <!-- 用户表格 -->
-    <el-table
-      ref="tableRef"
-      v-loading="loading"
-      :data="tableData"
-      border
-      stripe
-      style="margin-top:15px"
-      @selection-change="handleSelectionChange"
-    >
-      <el-table-column type="selection" width="55" />
-      <el-table-column label="ID" prop="id" width="80" />
-      <el-table-column label="用户名" prop="username" />
-      <el-table-column label="手机号" prop="phone" />
-      <el-table-column label="角色" prop="role">
-        <template #default="{ row }">
-          <el-tag :type="row.role === 'admin' ? 'danger' : 'info'">
-            {{ row.role === 'admin' ? '管理员' : '普通用户' }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" width="150">
-        <template #default="{ row }">
-          <el-button v-if="can('user:edit')" link type="primary" @click="openEditDialog(row)">编辑</el-button>
-          <el-button v-if="can('user:delete')" link type="danger" @click="handleDelete(row)">删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+    <el-card shadow="never" class="main-card">
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <el-input
+            v-model="query.keyword"
+            placeholder="搜索用户名"
+            class="search-input"
+            clearable
+            @keyup.enter="handleSearch"
+            @clear="handleSearch"
+          >
+            <template #prefix>
+              <el-icon><Search /></el-icon>
+            </template>
+          </el-input>
+          <el-button type="primary" @click="handleSearch">
+            <el-icon class="btn-icon"><Search /></el-icon>查询
+          </el-button>
+        </div>
 
-    <!-- 第 6 课：使用封装好的弹窗组件 -->
-    <UserFormDialog
-      v-model="dialogVisible"
-      :title="dialogTitle"
-      :row-data="currentRow"
-      :submitting="submitting"
-      @submit="submitForm"
-    />
-  </el-card>
+        <div class="toolbar-right">
+          <el-button v-if="can('user:add')" type="success" @click="openAddDialog">
+            <el-icon class="btn-icon"><Plus /></el-icon>新增用户
+          </el-button>
+          <el-button
+            v-if="can('user:delete')"
+            type="danger"
+            plain
+            :loading="deleting"
+            :disabled="selectedRows.length === 0"
+            @click="handleBatchDelete"
+          >
+            批量删除（已选 {{ selectedRows.length }} 项）
+          </el-button>
+        </div>
+      </div>
+
+      <el-table
+        ref="tableRef"
+        v-loading="loading"
+        :data="tableData"
+        stripe
+        class="user-table"
+        :header-cell-style="{ background: '#fafafa', color: '#606266', fontWeight: '600' }"
+        @selection-change="handleSelectionChange"
+      >
+        <el-table-column type="selection" width="50" />
+        <el-table-column label="ID" prop="id" width="80" />
+        <el-table-column label="用户名" prop="username" min-width="120" />
+        <el-table-column label="手机号" prop="phone" min-width="140" />
+        <el-table-column label="角色" prop="role" width="120">
+          <template #default="{ row }">
+            <el-tag :type="row.role === 'admin' ? 'danger' : 'info'" effect="light" round>
+              {{ row.role === 'admin' ? '管理员' : '普通用户' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="150" align="center">
+          <template #default="{ row }">
+            <el-button v-if="can('user:edit')" link type="primary" @click="openEditDialog(row)">编辑</el-button>
+            <el-button v-if="can('user:delete')" link type="danger" @click="handleDelete(row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+
+      <UserFormDialog
+        v-model="dialogVisible"
+        :title="dialogTitle"
+        :row-data="currentRow"
+        :submitting="submitting"
+        @submit="submitForm"
+      />
+    </el-card>
+  </div>
 </template>
 
 <script>
-// 第 4 课：引入接口
 import { getUserList, addUser, editUser, delUser } from '../api/user'
 import UserFormDialog from '../components/UserFormDialog.vue'
 
@@ -85,16 +102,14 @@ export default {
     }
   },
   created() {
-    // 页面加载即拉取列表
     this.fetchList()
   },
   methods: {
-    // 第 9 课：按钮权限判断
+    // 按钮权限判断
     can(permission) {
       return this.$store.state.userInfo?.permissions?.includes(permission) || false
     },
 
-    // ========== 统一的获取列表方法 ==========
     async fetchList() {
       this.loading = true
       try {
@@ -106,30 +121,26 @@ export default {
         this.$message.error("获取列表失败")
         console.error(e)
       } finally {
-        this.loading = false // 无论成功失败都要关掉 loading
+        this.loading = false
       }
     },
 
-    // 搜索：直接重新请求接口
     handleSearch() {
       this.fetchList()
     },
 
-    // 打开新增弹窗：currentRow 传空对象
     openAddDialog() {
       this.dialogTitle = "新增用户"
       this.currentRow = {}
       this.dialogVisible = true
     },
 
-    // 打开编辑弹窗：currentRow 传该行数据副本
     openEditDialog(row) {
       this.dialogTitle = "编辑用户"
       this.currentRow = { ...row }
       this.dialogVisible = true
     },
 
-    // 接收弹窗抛上来的表单数据，新增 / 编辑分流
     async submitForm(form) {
       this.submitting = true
       try {
@@ -137,7 +148,7 @@ export default {
         if (res.code === 200) {
           this.$message.success(res.msg || "保存成功")
           this.dialogVisible = false
-          this.fetchList() // 重新拉取列表，保证和数据源一致
+          this.fetchList()
         }
       } catch (e) {
         this.$message.error(e.message || "保存失败")
@@ -146,14 +157,13 @@ export default {
       }
     },
 
-    // 单行删除
     async handleDelete(row) {
       try {
         await this.$confirm(`确定删除用户「${row.username}」吗？`, '提示', {
           confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning'
         })
       } catch {
-        return // 用户取消
+        return
       }
       try {
         await delUser(row.id)
@@ -165,12 +175,10 @@ export default {
       }
     },
 
-    // 第 8 课：表格勾选变化
     handleSelectionChange(rows) {
       this.selectedRows = rows
     },
 
-    // 第 8 课：批量删除（逐个调用接口，真实项目应由后端提供批量接口）
     async handleBatchDelete() {
       const ids = this.selectedRows.map(row => row.id)
       if (ids.length === 0) return
@@ -179,7 +187,7 @@ export default {
           confirmButtonText: '确定', cancelButtonText: '取消', type: 'warning'
         })
       } catch {
-        return // 用户取消
+        return
       }
 
       this.deleting = true
@@ -189,14 +197,12 @@ export default {
       } catch (error) {
         this.$message.error(`删除中断：${error.message || '请求失败'}`)
       } finally {
-        // 中途失败可能已有部分删除成功，无论结果如何都重新拉取列表
         await this.fetchList()
         this.clearSelection()
         this.deleting = false
       }
     },
 
-    // 清空表格勾选状态
     clearSelection() {
       this.$refs.tableRef && this.$refs.tableRef.clearSelection()
       this.selectedRows = []
@@ -206,9 +212,31 @@ export default {
 </script>
 
 <style scoped>
-.search-box {
-  display: flex;
-  gap: 10px;
-  align-items: center;
+.page-header { margin-bottom: 16px; }
+.page-header h2 {
+  font-size: 20px;
+  font-weight: 600;
+  color: #1f2d3d;
+  margin-bottom: 4px;
 }
+.page-header p { font-size: 13px; color: #909399; }
+
+.main-card { border: none; border-radius: 10px; }
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.toolbar-left { display: flex; align-items: center; gap: 10px; }
+.toolbar-right { display: flex; align-items: center; gap: 10px; }
+.search-input { width: 240px; }
+.btn-icon { margin-right: 4px; }
+
+.user-table { border-radius: 8px; }
+.user-table :deep(th.el-table__cell) { background: #fafafa !important; }
+.user-table :deep(.el-table__row:hover > td) { background: #f5f9ff !important; }
 </style>

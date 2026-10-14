@@ -1,47 +1,41 @@
 <template>
   <div v-loading="loading">
-    <el-card>
-      <h3>仪表盘首页</h3>
-      <p>欢迎进入工作中台，展示统计数据</p>
+    <el-row :gutter="16">
+      <el-col v-for="s in statCards" :key="s.label" :xs="12" :sm="12" :md="6">
+        <el-card shadow="hover" class="stat-card">
+          <div class="stat-inner">
+            <div class="stat-icon" :style="{ color: s.color, background: s.bg }">
+              <el-icon :size="26"><component :is="s.icon" /></el-icon>
+            </div>
+            <div class="stat-meta">
+              <div class="stat-value">{{ s.value }}</div>
+              <div class="stat-label">{{ s.label }}</div>
+            </div>
+          </div>
+        </el-card>
+      </el-col>
+    </el-row>
 
-      <el-row :gutter="20" style="margin-top:20px">
-        <el-col :span="6">
-          <el-card shadow="hover">
-            <div class="num-card">用户总数：{{ userCount }}</div>
-            <div class="num-tip">来自 getUserList() 接口</div>
-          </el-card>
-        </el-col>
-        <el-col :span="6">
-          <el-card shadow="hover">
-            <div class="num-card">待办任务：18</div>
-            <div class="num-tip">静态模拟数据</div>
-          </el-card>
-        </el-col>
-        <el-col :span="6">
-          <el-card shadow="hover">
-            <div class="num-card">已完成任务：421</div>
-            <div class="num-tip">静态模拟数据</div>
-          </el-card>
-        </el-col>
-        <el-col :span="6">
-          <el-card shadow="hover">
-            <div class="num-card">系统消息：6</div>
-            <div class="num-tip">静态模拟数据</div>
-          </el-card>
-        </el-col>
-      </el-row>
-    </el-card>
-
-    <el-row :gutter="20" style="margin-top:20px">
-      <el-col :span="14">
-        <el-card shadow="hover">
-          <template #header>月度任务完成情况（静态模拟数据）</template>
+    <el-row :gutter="16" class="chart-row">
+      <el-col :xs="24" :md="14">
+        <el-card shadow="never" class="panel">
+          <template #header>
+            <div class="panel-header">
+              <span class="panel-bar"></span>
+              <span>月度任务完成情况</span>
+            </div>
+          </template>
           <div ref="barRef" class="chart" style="height:320px"></div>
         </el-card>
       </el-col>
-      <el-col :span="10">
-        <el-card shadow="hover">
-          <template #header>用户角色分布（实时）</template>
+      <el-col :xs="24" :md="10">
+        <el-card shadow="never" class="panel">
+          <template #header>
+            <div class="panel-header">
+              <span class="panel-bar"></span>
+              <span>用户角色分布</span>
+            </div>
+          </template>
           <div ref="pieRef" class="chart" style="height:320px"></div>
         </el-card>
       </el-col>
@@ -51,7 +45,6 @@
 
 <script>
 import * as echarts from 'echarts'
-// 第 4 课封装好的接口，直接复用
 import { getUserList } from '../api/user'
 
 export default {
@@ -65,11 +58,9 @@ export default {
     }
   },
   computed: {
-    // 用户总数直接由接口数据算出来
     userCount() {
       return this.users.length
     },
-    // 角色分布：admin 算管理员，其余算普通用户
     roleStats() {
       let admin = 0
       let normal = 0
@@ -78,15 +69,22 @@ export default {
         else normal++
       })
       return { admin, normal }
+    },
+    statCards() {
+      return [
+        { label: '用户总数', value: this.userCount, icon: 'UserFilled', color: '#409eff', bg: 'rgba(64,158,255,.12)' },
+        { label: '待办任务', value: 18, icon: 'Clock', color: '#e6a23c', bg: 'rgba(230,162,60,.14)' },
+        { label: '已完成任务', value: 421, icon: 'CircleCheck', color: '#67c23a', bg: 'rgba(103,194,58,.14)' },
+        { label: '系统消息', value: 6, icon: 'Bell', color: '#9c5fe0', bg: 'rgba(156,95,224,.14)' }
+      ]
     }
   },
   created() {
     this.fetchUsers()
   },
   mounted() {
-    // DOM 渲染完成后再初始化图表
     this.initBarChart()
-    this.initPieChart()   // 内部会调用 updatePieChart 填数据
+    this.initPieChart()
     window.addEventListener('resize', this.handleResize)
   },
   beforeUnmount() {
@@ -95,14 +93,13 @@ export default {
     this.pieChart && this.pieChart.dispose()
   },
   methods: {
-    // 拉取用户列表（仪表盘的实时数据来源）
+    // 用户总数 / 角色分布都来自这里
     async fetchUsers() {
       this.loading = true
       try {
         const res = await getUserList({})
         if (res.code === 200) {
           this.users = res.data || []
-          // 数据到了就更新已有图表实例，不要重新 init
           this.updatePieChart()
         }
       } catch (e) {
@@ -114,17 +111,37 @@ export default {
     },
 
     initBarChart() {
-      // 月度任务暂时没有对应接口，保留静态演示数据
       this.barChart = echarts.init(this.$refs.barRef)
       this.barChart.setOption({
         tooltip: { trigger: 'axis' },
-        legend: { data: ['已完成', '待办'] },
-        grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
-        xAxis: { type: 'category', data: ['1月', '2月', '3月', '4月', '5月', '6月'] },
-        yAxis: { type: 'value' },
+        legend: { data: ['已完成', '待办'], top: 0 },
+        grid: { left: '3%', right: '4%', bottom: '3%', top: 40, containLabel: true },
+        xAxis: {
+          type: 'category',
+          data: ['1月', '2月', '3月', '4月', '5月', '6月'],
+          axisLine: { lineStyle: { color: '#dcdfe6' } },
+          axisLabel: { color: '#909399' }
+        },
+        yAxis: {
+          type: 'value',
+          splitLine: { lineStyle: { color: '#f0f2f5' } },
+          axisLabel: { color: '#909399' }
+        },
         series: [
-          { name: '已完成', type: 'bar', data: [120, 200, 150, 80, 70, 110], itemStyle: { color: '#409EFF' } },
-          { name: '待办', type: 'bar', data: [20, 32, 18, 30, 25, 12], itemStyle: { color: '#E6A23C' } }
+          {
+            name: '已完成',
+            type: 'bar',
+            barWidth: 14,
+            itemStyle: { color: '#409eff', borderRadius: [4, 4, 0, 0] },
+            data: [120, 200, 150, 80, 70, 110]
+          },
+          {
+            name: '待办',
+            type: 'bar',
+            barWidth: 14,
+            itemStyle: { color: '#e6a23c', borderRadius: [4, 4, 0, 0] },
+            data: [20, 32, 18, 30, 25, 12]
+          }
         ]
       })
     },
@@ -133,21 +150,23 @@ export default {
       this.pieChart = echarts.init(this.$refs.pieRef)
       this.pieChart.setOption({
         tooltip: { trigger: 'item' },
-        legend: { bottom: 0 },
+        legend: { bottom: 0, icon: 'circle' },
+        color: ['#409eff', '#67c23a'],
         series: [
           {
             name: '角色分布',
             type: 'pie',
-            radius: ['45%', '65%'],
+            radius: ['48%', '68%'],
             center: ['50%', '45%'],
-            data: []   // 真正的数据交给 updatePieChart
+            itemStyle: { borderColor: '#fff', borderWidth: 3 },
+            label: { formatter: '{b}\n{c} 人', color: '#606266' },
+            data: []
           }
         ]
       })
       this.updatePieChart()
     },
 
-    // 用当前 roleStats 刷新饼图（数据变化时重复调用即可）
     updatePieChart() {
       if (!this.pieChart) return
       this.pieChart.setOption({
@@ -171,17 +190,52 @@ export default {
 </script>
 
 <style scoped>
-.num-card {
-  font-size: 16px;
-  font-weight: 600;
-  color: #303133;
+.stat-card {
+  border: none;
+  border-radius: 10px;
+  margin-bottom: 16px;
 }
-.num-tip {
-  margin-top: 6px;
-  font-size: 12px;
+.stat-card :deep(.el-card__body) { padding: 18px; }
+.stat-inner { display: flex; align-items: center; gap: 14px; }
+.stat-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1f2d3d;
+  line-height: 1.2;
+}
+.stat-label {
+  font-size: 13px;
   color: #909399;
+  margin-top: 2px;
 }
-.chart {
-  width: 100%;
+
+.chart-row { margin-top: 4px; }
+.panel {
+  border: none;
+  border-radius: 10px;
+  margin-bottom: 16px;
 }
+.panel-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: #1f2d3d;
+}
+.panel-bar {
+  width: 4px;
+  height: 15px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, #409eff, #6ab0ff);
+}
+.chart { width: 100%; }
 </style>

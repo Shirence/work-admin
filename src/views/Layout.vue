@@ -1,33 +1,47 @@
 <template>
   <div class="layout">
-    <!-- 左侧侧边栏 -->
     <el-aside width="220px" class="aside">
       <div class="logo">
-        <span>工作管理中台</span>
+        <div class="logo-mark">W</div>
+        <div class="logo-text">
+          <span class="logo-title">工作管理中台</span>
+          <span class="logo-sub">WORK ADMIN</span>
+        </div>
       </div>
+
       <el-menu
         :default-active="$route.path"
         router
-        background-color="#304156"
+        class="side-menu"
+        background-color="transparent"
         text-color="#bfcbd9"
-        active-text-color="#409EFF"
+        active-text-color="#ffffff"
       >
-        <!-- 第 9 课：菜单由路由 meta 派生，只显示当前角色能访问的页面 -->
         <el-menu-item v-for="item in menuList" :key="item.path" :index="item.path">
           <el-icon><component :is="item.icon" /></el-icon>
           <span>{{ item.title }}</span>
         </el-menu-item>
       </el-menu>
+
+      <div class="aside-footer">v1.0.0 · 教学演示</div>
     </el-aside>
 
-    <!-- 右侧整体容器 -->
     <div class="main-wrap">
-      <!-- 顶部导航栏 -->
       <el-header class="header">
-        <div>欢迎，{{ $store.state.userInfo?.username }}</div>
-        <el-button link @click="handleLogout">退出登录</el-button>
+        <div class="header-left">
+          <span class="page-title">{{ pageTitle }}</span>
+        </div>
+        <div class="header-right">
+          <el-tag class="role-tag" size="small" round effect="light">{{ roleLabel }}</el-tag>
+          <el-avatar :size="30" class="avatar">{{ avatarText }}</el-avatar>
+          <span class="username">{{ username }}</span>
+          <el-button link class="logout-btn" @click="handleLogout">
+            <el-icon><SwitchButton /></el-icon>
+            <span>退出</span>
+          </el-button>
+        </div>
       </el-header>
-      <!-- 主内容区域，子路由渲染在这里 -->
+
       <el-main class="content">
         <router-view />
       </el-main>
@@ -41,10 +55,22 @@ import { logout as logoutApi } from '../api/auth'
 export default {
   name: "Layout",
   computed: {
+    username() {
+      return this.$store.state.userInfo?.username || ''
+    },
     userRole() {
       return this.$store.state.userInfo?.role
     },
-    // 从同一份路由元信息派生菜单，避免再维护一份角色列表
+    roleLabel() {
+      const map = { admin: '管理员', manager: '主管', viewer: '访客' }
+      return map[this.userRole] || '用户'
+    },
+    avatarText() {
+      return (this.username.charAt(0) || 'U').toUpperCase()
+    },
+    pageTitle() {
+      return (this.$route.meta && this.$route.meta.title) || ''
+    },
     menuList() {
       return this.$router
         .getRoutes()
@@ -71,36 +97,91 @@ export default {
 .layout {
   display: flex;
   height: 100vh;
-  margin: 0;
-  padding: 0;
   overflow: hidden;
 }
+
+/* ---------------- 侧边栏 ---------------- */
 .aside {
-  background-color: #304156;
-}
-.logo {
-  height: 60px;
-  line-height: 60px;
-  text-align: center;
-  color: #fff;
-  font-size: 18px;
-  border-bottom: 1px solid #434a50;
-}
-.main-wrap {
-  flex: 1;
+  background: linear-gradient(180deg, #2b3a4d 0%, #1f2d3d 100%);
   display: flex;
   flex-direction: column;
 }
-.header {
-  background: #ffffff;
-  border-bottom: 1px solid #e6e6e6;
+.logo {
+  height: 64px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 0 20px;
+  gap: 10px;
+  padding: 0 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, .08);
 }
+.logo-mark {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #409eff, #6ab0ff);
+  color: #fff;
+  font-weight: 700;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(64, 158, 255, .45);
+}
+.logo-text { display: flex; flex-direction: column; line-height: 1.25; }
+.logo-title { color: #fff; font-size: 15px; font-weight: 600; }
+.logo-sub { color: #7f8fa4; font-size: 10px; letter-spacing: 1.5px; }
+
+.side-menu {
+  flex: 1;
+  border-right: none;
+  padding: 10px 0;
+}
+.side-menu :deep(.el-menu-item) {
+  height: 46px;
+  margin: 4px 10px;
+  border-radius: 8px;
+}
+.side-menu :deep(.el-menu-item:hover) {
+  background-color: rgba(255, 255, 255, .08) !important;
+}
+.side-menu :deep(.el-menu-item.is-active) {
+  background-color: #409eff !important;
+  box-shadow: 0 4px 12px rgba(64, 158, 255, .4);
+}
+.aside-footer {
+  padding: 14px 18px;
+  color: #5d6b7c;
+  font-size: 11px;
+  border-top: 1px solid rgba(255, 255, 255, .06);
+}
+
+/* ---------------- 右侧 ---------------- */
+.main-wrap { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.header {
+  height: 64px;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 22px;
+  box-shadow: 0 1px 4px rgba(0, 21, 41, .08);
+  z-index: 10;
+}
+.page-title { font-size: 17px; font-weight: 600; color: #1f2d3d; }
+.header-right { display: flex; align-items: center; gap: 10px; }
+.role-tag { border: none; }
+.avatar {
+  background: linear-gradient(135deg, #409eff, #6ab0ff);
+  color: #fff;
+  font-size: 13px;
+}
+.username { font-size: 14px; color: #303133; }
+.logout-btn { display: flex; align-items: center; gap: 4px; color: #606266; }
+.logout-btn:hover { color: #409eff; }
+
 .content {
-  background-color: #f5f7fa;
+  flex: 1;
+  background: #f0f2f5;
   padding: 20px;
   overflow-y: auto;
 }
