@@ -9,6 +9,15 @@ export function login(data) {
   })
 }
 
+// 注册：{ username, password, confirmPassword, email }
+export function register(data) {
+  return request({
+    url: '/register',
+    method: 'post',
+    data
+  })
+}
+
 // 退出登录
 export function logout() {
   return request({

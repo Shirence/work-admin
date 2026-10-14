@@ -59,6 +59,7 @@ npm run build:mock
 ## 三、功能清单
 
 - 登录与退出：调用后端 `POST /api/login`，token 存 Vuex + localStorage，退出调 `POST /api/logout`
+- 注册：`/register` 页面（终端风格），前端校验用户名/密码复杂度/两次一致，调 `POST /api/register`
 - 路由全局守卫：未登录拦截、`meta.roles` 页面级角色权限
 - 请求封装：`src/api/request.js` 统一 baseURL、自动带 token、拆掉一层 `res.data`、401 自动回登录页
 - 中台布局：flex 骨架、侧边菜单、内容区独立滚动
@@ -123,6 +124,7 @@ work-admin/
 │   ├── views/
 │   │   ├── Layout.vue          # 中台布局骨架
 │   │   ├── Login.vue           # 登录（调用后端）
+│   │   ├── Register.vue        # 注册（调用后端）
 │   │   ├── Dashboard.vue       # ECharts + 实时用户统计
 │   │   └── User.vue
 │   ├── App.vue

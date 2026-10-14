@@ -11,6 +11,11 @@ const routes = [
     component: () => import('../views/Login.vue')
   },
   {
+    path: '/register',
+    name: 'Register',
+    component: () => import('../views/Register.vue')
+  },
+  {
     path: '/',
     component: Layout,
     redirect: '/dashboard',
@@ -41,8 +46,9 @@ const router = createRouter({
 router.beforeEach(to => {
   const token = store.state.token
 
-  // 登录页：已登录直接去仪表盘，未登录放行
-  if (to.path === '/login') return token ? '/dashboard' : true
+  // 白名单：登录、注册页无需 token；已登录则直接去仪表盘
+  const whiteList = ['/login', '/register']
+  if (whiteList.includes(to.path)) return token ? '/dashboard' : true
 
   // 未登录：一律去登录页
   if (!token) return '/login'

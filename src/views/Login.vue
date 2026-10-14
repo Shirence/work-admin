@@ -44,6 +44,10 @@
         <div><span class="k">DEMO</span>admin / manager / viewer</div>
         <div><span class="k">PASS</span>123456</div>
       </div>
+
+      <div class="foot mono">
+        还没有账号？<router-link to="/register">注册账号 / SIGN UP</router-link>
+      </div>
     </div>
 
     <div class="copyright mono">VUE3 + ELEMENT-PLUS + SPRING-BOOT</div>
@@ -165,6 +169,17 @@ export default {
   gap: 5px;
 }
 .tips .k { display: inline-block; width: 46px; color: var(--accent); }
+
+.foot {
+  margin: 14px 26px 20px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+  font-size: 11px;
+  color: var(--text-3);
+  text-align: center;
+}
+.foot a { color: var(--accent); text-decoration: none; }
+.foot a:hover { text-decoration: underline; }
 
 .copyright { margin-top: 18px; font-size: 10px; color: var(--text-3); letter-spacing: 2px; }
 </style>

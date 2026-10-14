@@ -57,7 +57,7 @@ work-admin-server/
     │   │   ├── AuthInterceptor.java         # 校验请求头 token
     │   │   └── DataInitializer.java         # 启动时插入张三、李四
     │   ├── controller/
-    │   │   ├── AuthController.java          # /api/login /logout /me /health
+    │   │   ├── AuthController.java          # /api/login /register /logout /me /health
     │   │   └── UserController.java          # /api/user/*
     │   ├── dto/                             # 请求 / 响应对象
     │   ├── entity/User.java                 # 用户表 sys_user
@@ -77,6 +77,7 @@ work-admin-server/
 |---|---|---|---|
 | GET | `/api/health` | 否 | 探活 |
 | POST | `/api/login` | 否 | 登录，body `{username,password}` |
+| POST | `/api/register` | 否 | 注册，body `{username,password,confirmPassword,email}` |
 | POST | `/api/logout` | 是 | 退出登录，作废 token |
 | GET | `/api/me` | 是 | 当前登录用户 |
 | GET | `/api/user/list?keyword=` | 是 | 用户列表（可按用户名搜索） |
@@ -93,6 +94,19 @@ work-admin-server/
 - `code == 200` 成功；`401` 未登录、`400` 参数错误、`404` 数据不存在、`500` 服务器错误
 - 需要鉴权的接口请在请求头带 `token: <登录返回的 token>`
 - 业务错误统一返回 **HTTP 200 + 业务 code**，方便前端 axios 拦截器统一处理
+
+### 注册规则
+
+注册接口在服务端会再校验一遍（前端校验只是提升体验，不能当安全边界）：
+
+| 字段 | 规则 |
+|---|---|
+| username | 4-20 位字母 / 数字 / 下划线，且未被占用 |
+| password | 6-32 位，必须同时包含字母和数字 |
+| confirmPassword | 必须与 password 一致 |
+| email | 合法邮箱格式，且未被占用 |
+
+密码经 `BCryptPasswordEncoder` 哈希后存入 `sys_account`，**数据库里看不到明文**。
 
 ### 演示账号
 
@@ -178,7 +192,8 @@ proxy: { '/api': { target: 'http://localhost:8081', changeOrigin: true } }
 教学项目，以下都是简化实现，**不要直接上生产**：
 
 - token 存在内存里，重启即失效，也没有过期 / 刷新机制
-- 演示账号硬编码在 `AuthService`，密码明文
+- 账号已入库（`sys_account`），密码用 **BCrypt** 哈希；但注册没有验证码、没有邮箱激活
+- 新注册账号一律是 `viewer`（最小权限）
 - 接口只校验「有没有登录」，**没有做「这个角色能不能调这个接口」的服务端鉴权**
 - 没有 HTTPS、限流、审计日志
 
