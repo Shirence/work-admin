@@ -114,7 +114,10 @@ work-admin/
 │   ├── components/
 │   │   ├── UserFormDialog.vue  # 用户弹窗表单（第 6 课）
 │   │   ├── SearchBar.vue       # 可选：搜索栏（第 6 课）
-│   │   └── AvatarUpload.vue    # 本地头像预览（第 8 课）
+│   │   ├── AvatarUpload.vue    # 本地头像预览（第 8 课）
+│   │   └── ParticleField.vue   # 环境粒子场（空间感）
+│   ├── directives/
+│   │   └── reveal.js           # v-reveal 滚动淡入指令
 │   ├── mock/
 │   │   └── index.js            # Mock 接口（仅 VUE_APP_USE_MOCK=true 时加载）
 │   ├── router/
@@ -140,7 +143,25 @@ work-admin/
 
 ---
 
-## 六、打包与部署
+## 六、界面设计系统（白色基调）
+
+按「材质感 / 呼吸感 / 空间感 / 组件系统」四层组织，整体是大留白白色基调：
+
+| 层 | 实现 |
+|---|---|
+| 材质感 | 细边框 + 分层轻阴影 + `backdrop-filter` 玻璃 + 噪点纹理 + 柔和渐变网格（`.mesh` / `.noise` / `.glass` / `.surface`） |
+| 呼吸感 | 自定义缓动曲线 + `v-reveal` 滚动淡入 + hover 反馈 + 错落延迟；尊重 `prefers-reduced-motion` |
+| 空间感 | 登录 / 注册页的轻量 Canvas 粒子场（`components/ParticleField.vue`），只做氛围不抢主体 |
+| 组件系统 | `App.vue` 的 `:root` 集中管理 design tokens，并对齐 Element Plus 主题变量 |
+
+要点：
+
+- 设计变量（颜色 / 圆角 / 阴影 / 缓动 / 字体）全在 `src/App.vue` 的 `:root`，改一处全局生效
+- 动效指令：`v-reveal` 或 `v-reveal="120"`（数字是延迟毫秒，用来做错落）
+- 强调色只有一个（`--accent: #0a84ff`），避免多色堆叠
+- 未引入 Three.js，3D 那层用 Canvas 2D 粒子实现，控制打包体积
+
+## 七、打包与部署
 
 ```bash
 npm run build        # 产物 dist/，需要后端
@@ -153,7 +174,7 @@ npm run build:mock   # 产物 dist/，自带 Mock，可离线运行
 
 ---
 
-## 七、说明与边界
+## 八、说明与边界
 
 - 前端只负责界面与交互；**鉴权和数据持久化在后端**。
 - 前端按钮权限（`v-if="can('user:edit')"`）只隐藏 UI，**不构成安全边界**。
