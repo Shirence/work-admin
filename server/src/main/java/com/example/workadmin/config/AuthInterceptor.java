@@ -1,0 +1,48 @@
+package com.example.workadmin.config;
+
+import com.example.workadmin.dto.UserInfo;
+import com.example.workadmin.service.TokenStore;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.HandlerInterceptor;
+
+import java.io.IOException;
+
+/**
+ * 校验请求头里的 token。
+ * 未通过时返回 HTTP 200 + code 401，前端 axios 拦截器可直接拿到 msg。
+ */
+@Component
+public class AuthInterceptor implements HandlerInterceptor {
+
+    public static final String CURRENT_USER = "CURRENT_USER";
+
+    private final TokenStore tokenStore;
+
+    public AuthInterceptor(TokenStore tokenStore) {
+        this.tokenStore = tokenStore;
+    }
+
+    @Override
+    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws IOException {
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            return true;
+        }
+        String token = request.getHeader("token");
+        UserInfo userInfo = tokenStore.get(token);
+        if (userInfo == null) {
+            writeJson(response, 401, "未登录或登录已过期");
+            return false;
+        }
+        request.setAttribute(CURRENT_USER, userInfo);
+        return true;
+    }
+
+    private void writeJson(HttpServletResponse response, int code, String msg) throws IOException {
+        response.setStatus(HttpServletResponse.SC_OK);
+        response.setCharacterEncoding("UTF-8");
+        response.setContentType("application/json;charset=UTF-8");
+        response.getWriter().write("{\"code\":" + code + ",\"msg\":\"" + msg + "\",\"data\":null}");
+    }
+}

@@ -2,7 +2,7 @@
 
 Vue 3（选项式 API，纯 JavaScript）+ Element Plus + Vuex + Vue Router + Axios。
 
-配套后端：[`work-admin-server`](../work-admin-server)（Spring Boot 3.5 + Spring Data JPA + H2）。
+配套后端：[`server`](./server)（Spring Boot 3.5 + Spring Data JPA + H2）。
 
 > 前端按《Vue 3 + Element Plus 工作管理中台：项目实战课》第 0 ~ 10 课完成，
 > 之后扩展了「第 11 课」：接入 Spring Boot 真实后端；MockJS 保留为可切换的离线模式。
@@ -13,14 +13,14 @@ Vue 3（选项式 API，纯 JavaScript）+ Element Plus + Vuex + Vue Router + Ax
 
 | 模式 | 怎么启动 | 需要后端 | 数据存放 |
 |---|---|---|---|
-| **联调模式（默认）** | `npm run serve` + 启动 work-admin-server | 是 | H2 数据库，重启后端后复位 |
+| **联调模式（默认）** | `npm run serve` + 启动 server/ 后端 | 是 | H2 数据库，重启后端后复位 |
 | **离线 Mock** | `VUE_APP_USE_MOCK=true`，或 `npm run build:mock` | 否 | 浏览器内存，刷新复位 |
 
 ### 1. 联调模式（推荐）
 
 ```bash
 # 1) 启动后端（http://localhost:8081）
-cd E:\my-project\work-admin-server
+cd E:\my-project\work-admin\server
 mvn spring-boot:run
 
 # 2) 启动前端（http://localhost:8080）

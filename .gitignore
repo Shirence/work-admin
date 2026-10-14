@@ -7,3 +7,6 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 .DS_Store
+
+# 后端（Spring Boot）构建产物
+server/target/

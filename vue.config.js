@@ -7,7 +7,7 @@ module.exports = defineConfig({
   publicPath: '/',
   devServer: {
     port: 8080,
-    // 开发代理：把 /api 转发到 Spring Boot（8081）。
+    // 开发代理：把 /api 转发到 Spring Boot（server/ 目录，端口 8081）。
     // 后端接口路径本身就带 /api 前缀，所以不要写 pathRewrite。
     proxy: {
       '/api': {
