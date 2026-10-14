@@ -1,41 +1,52 @@
 <template>
-  <div class="login-page">
-    <div class="login-box">
+  <div class="login-page tech-grid">
+    <div class="login-box hud">
+      <div class="scanline"></div>
+
+      <div class="box-head mono">
+        <span class="prompt">&gt;</span>
+        <span>AUTH_REQUIRED</span>
+        <span class="cursor"></span>
+      </div>
+
       <div class="brand">
         <div class="brand-mark">W</div>
         <h1>工作管理中台</h1>
-        <p>WORK ADMIN CONSOLE</p>
+        <p class="mono">WORK_ADMIN // CONSOLE</p>
       </div>
 
-      <el-form ref="loginFormRef" :model="loginForm" size="large" @submit.prevent>
-        <el-form-item>
-          <el-input
-            v-model="loginForm.username"
-            placeholder="请输入账号"
-            clearable
-            @keyup.enter="handleLogin"
-          />
-        </el-form-item>
-        <el-form-item>
-          <el-input
-            v-model="loginForm.password"
-            type="password"
-            placeholder="请输入密码"
-            show-password
-            @keyup.enter="handleLogin"
-          />
-        </el-form-item>
-        <el-button type="primary" class="login-btn" :loading="loading" @click="handleLogin">
-          登 录
-        </el-button>
-      </el-form>
+      <div class="form-wrap">
+        <el-form ref="loginFormRef" :model="loginForm" size="large" @submit.prevent>
+          <el-form-item>
+            <el-input
+              v-model="loginForm.username"
+              placeholder="USERNAME / 账号"
+              clearable
+              @keyup.enter="handleLogin"
+            />
+          </el-form-item>
+          <el-form-item>
+            <el-input
+              v-model="loginForm.password"
+              type="password"
+              placeholder="PASSWORD / 密码"
+              show-password
+              @keyup.enter="handleLogin"
+            />
+          </el-form-item>
+          <button class="login-btn mono" type="button" :disabled="loading" @click="handleLogin">
+            {{ loading ? 'AUTHENTICATING...' : 'EXECUTE LOGIN' }}
+          </button>
+        </el-form>
+      </div>
 
-      <div class="tips">
-        <span>演示账号：admin / manager / viewer</span>
-        <span>密码：123456</span>
+      <div class="tips mono">
+        <div><span class="k">DEMO</span>admin / manager / viewer</div>
+        <div><span class="k">PASS</span>123456</div>
       </div>
     </div>
-    <div class="copyright">work-admin · Vue 3 + Element Plus + Spring Boot</div>
+
+    <div class="copyright mono">VUE3 + ELEMENT-PLUS + SPRING-BOOT</div>
   </div>
 </template>
 
@@ -86,43 +97,74 @@ export default {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(circle at 18% 18%, #2b5876 0%, #1f2d3d 65%);
+  background: var(--bg-sub);
 }
 .login-box {
   width: 400px;
-  padding: 38px 36px 24px;
-  background: #fff;
-  border-radius: 14px;
-  box-shadow: 0 18px 50px rgba(0, 0, 0, .3);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  box-shadow: 0 10px 40px rgba(16, 26, 36, .09);
+  overflow: hidden;
 }
-.brand { text-align: center; margin-bottom: 26px; }
+.box-head {
+  height: 34px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 14px;
+  background: var(--bg-sub);
+  border-bottom: 1px solid var(--line);
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--text-2);
+}
+.prompt { color: var(--accent); font-weight: 700; }
+
+.brand { text-align: center; padding: 26px 0 18px; }
 .brand-mark {
-  width: 52px;
-  height: 52px;
+  width: 48px;
+  height: 48px;
   margin: 0 auto 12px;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #409eff, #6ab0ff);
+  background: var(--accent);
   color: #fff;
-  font-size: 26px;
+  font-family: var(--mono);
+  font-size: 24px;
   font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8px 20px rgba(64, 158, 255, .45);
+  clip-path: polygon(0 0, 100% 0, 100% 72%, 72% 100%, 0 100%);
 }
-.brand h1 { font-size: 21px; color: #1f2d3d; margin-bottom: 4px; }
-.brand p { font-size: 11px; color: #a0aab8; letter-spacing: 1.5px; }
-.login-btn { width: 100%; letter-spacing: 4px; margin-top: 4px; }
+.brand h1 { font-size: 20px; color: var(--text); margin-bottom: 6px; letter-spacing: 1px; }
+.brand p { font-size: 10px; color: var(--text-3); letter-spacing: 2px; }
+
+.form-wrap { padding: 0 26px; }
+.login-btn {
+  width: 100%;
+  height: 42px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  transition: background .15s;
+}
+.login-btn:hover:not(:disabled) { background: #008cc0; }
+.login-btn:disabled { opacity: .65; cursor: not-allowed; }
+
 .tips {
-  margin-top: 20px;
-  padding-top: 16px;
-  border-top: 1px dashed #e4e7ed;
+  margin: 18px 26px 0;
+  padding: 14px 0 0;
+  border-top: 1px dashed var(--line);
+  font-size: 11px;
+  color: var(--text-3);
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  font-size: 12px;
-  color: #909399;
-  text-align: center;
+  gap: 5px;
 }
-.copyright { margin-top: 22px; color: rgba(255, 255, 255, .35); font-size: 12px; }
+.tips .k { display: inline-block; width: 46px; color: var(--accent); }
+
+.copyright { margin-top: 18px; font-size: 10px; color: var(--text-3); letter-spacing: 2px; }
 </style>

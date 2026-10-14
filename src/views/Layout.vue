@@ -1,50 +1,57 @@
 <template>
   <div class="layout">
-    <el-aside width="220px" class="aside">
+    <!-- 左侧导航 -->
+    <aside class="aside">
       <div class="logo">
         <div class="logo-mark">W</div>
         <div class="logo-text">
-          <span class="logo-title">工作管理中台</span>
-          <span class="logo-sub">WORK ADMIN</span>
+          <span class="logo-title mono">WORK_ADMIN</span>
+          <span class="logo-sub">工作管理中台</span>
         </div>
       </div>
 
-      <el-menu
-        :default-active="$route.path"
-        router
-        class="side-menu"
-        background-color="transparent"
-        text-color="#bfcbd9"
-        active-text-color="#ffffff"
-      >
-        <el-menu-item v-for="item in menuList" :key="item.path" :index="item.path">
-          <el-icon><component :is="item.icon" /></el-icon>
-          <span>{{ item.title }}</span>
-        </el-menu-item>
-      </el-menu>
+      <div class="nav-label mono">// NAVIGATION</div>
 
-      <div class="aside-footer">v1.0.0 · 教学演示</div>
-    </el-aside>
+      <nav class="nav">
+        <router-link
+          v-for="(item, i) in menuList"
+          :key="item.path"
+          :to="item.path"
+          class="nav-item"
+          :class="{ active: $route.path === item.path }"
+        >
+          <span class="nav-index mono">{{ String(i + 1).padStart(2, '0') }}</span>
+          <el-icon class="nav-icon"><component :is="item.icon" /></el-icon>
+          <span class="nav-title">{{ item.title }}</span>
+        </router-link>
+      </nav>
 
+      <div class="aside-footer">
+        <div class="status-line mono"><span class="dot ok"></span>SYS.ONLINE</div>
+        <div class="ver mono">v1.0.0 · 教学演示</div>
+      </div>
+    </aside>
+
+    <!-- 右侧主体 -->
     <div class="main-wrap">
-      <el-header class="header">
+      <header class="header">
         <div class="header-left">
+          <span class="crumb mono">/ {{ $route.path }}</span>
           <span class="page-title">{{ pageTitle }}</span>
         </div>
         <div class="header-right">
-          <el-tag class="role-tag" size="small" round effect="light">{{ roleLabel }}</el-tag>
-          <el-avatar :size="30" class="avatar">{{ avatarText }}</el-avatar>
-          <span class="username">{{ username }}</span>
-          <el-button link class="logout-btn" @click="handleLogout">
-            <el-icon><SwitchButton /></el-icon>
-            <span>退出</span>
-          </el-button>
+          <span class="role mono">[ {{ roleLabel }} ]</span>
+          <div class="user">
+            <el-avatar :size="28" class="avatar">{{ avatarText }}</el-avatar>
+            <span class="username mono">{{ username }}</span>
+          </div>
+          <button class="logout mono" type="button" @click="handleLogout">EXIT</button>
         </div>
-      </el-header>
+      </header>
 
-      <el-main class="content">
+      <main class="content tech-grid">
         <router-view />
-      </el-main>
+      </main>
     </div>
   </div>
 </template>
@@ -62,8 +69,8 @@ export default {
       return this.$store.state.userInfo?.role
     },
     roleLabel() {
-      const map = { admin: '管理员', manager: '主管', viewer: '访客' }
-      return map[this.userRole] || '用户'
+      const map = { admin: 'ADMIN', manager: 'MANAGER', viewer: 'VIEWER' }
+      return map[this.userRole] || 'USER'
     },
     avatarText() {
       return (this.username.charAt(0) || 'U').toUpperCase()
@@ -94,95 +101,129 @@ export default {
 </script>
 
 <style scoped>
-.layout {
-  display: flex;
-  height: 100vh;
-  overflow: hidden;
-}
+.layout { display: flex; height: 100vh; overflow: hidden; }
 
-/* ---------------- 侧边栏 ---------------- */
+/* ---------------- 侧栏 ---------------- */
 .aside {
-  background: linear-gradient(180deg, #2b3a4d 0%, #1f2d3d 100%);
+  width: 220px;
+  flex-shrink: 0;
+  background: var(--bg);
+  border-right: 1px solid var(--line);
   display: flex;
   flex-direction: column;
+  position: relative;
+}
+.aside::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: -1px;
+  width: 2px;
+  height: 64px;
+  background: var(--accent);
 }
 .logo {
   height: 64px;
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 0 18px;
-  border-bottom: 1px solid rgba(255, 255, 255, .08);
+  padding: 0 16px;
+  border-bottom: 1px solid var(--line);
 }
 .logo-mark {
-  width: 34px;
-  height: 34px;
-  border-radius: 9px;
-  background: linear-gradient(135deg, #409eff, #6ab0ff);
+  width: 32px;
+  height: 32px;
+  background: var(--accent);
   color: #fff;
+  font-family: var(--mono);
   font-weight: 700;
-  font-size: 18px;
+  font-size: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 10px rgba(64, 158, 255, .45);
+  clip-path: polygon(0 0, 100% 0, 100% 72%, 72% 100%, 0 100%);
 }
-.logo-text { display: flex; flex-direction: column; line-height: 1.25; }
-.logo-title { color: #fff; font-size: 15px; font-weight: 600; }
-.logo-sub { color: #7f8fa4; font-size: 10px; letter-spacing: 1.5px; }
+.logo-text { display: flex; flex-direction: column; line-height: 1.35; }
+.logo-title { font-size: 12px; font-weight: 700; letter-spacing: 1px; color: var(--text); }
+.logo-sub { font-size: 11px; color: var(--text-3); }
 
-.side-menu {
-  flex: 1;
-  border-right: none;
-  padding: 10px 0;
+.nav-label {
+  padding: 16px 16px 8px;
+  font-size: 10px;
+  color: var(--text-3);
+  letter-spacing: 1px;
 }
-.side-menu :deep(.el-menu-item) {
-  height: 46px;
-  margin: 4px 10px;
-  border-radius: 8px;
+.nav { flex: 1; padding: 0 8px; overflow-y: auto; }
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 42px;
+  padding: 0 10px;
+  margin-bottom: 4px;
+  color: var(--text-2);
+  text-decoration: none;
+  font-size: 13px;
+  border: 1px solid transparent;
+  border-left: 2px solid transparent;
+  transition: all .15s;
 }
-.side-menu :deep(.el-menu-item:hover) {
-  background-color: rgba(255, 255, 255, .08) !important;
+.nav-item:hover { background: var(--bg-sub); color: var(--text); }
+.nav-item.active {
+  background: var(--accent-soft);
+  border-color: rgba(0, 166, 224, .25);
+  border-left: 2px solid var(--accent);
+  color: var(--accent);
+  font-weight: 600;
 }
-.side-menu :deep(.el-menu-item.is-active) {
-  background-color: #409eff !important;
-  box-shadow: 0 4px 12px rgba(64, 158, 255, .4);
+.nav-index { font-size: 10px; opacity: .55; }
+.nav-icon { font-size: 15px; }
+.nav-title { flex: 1; }
+
+.aside-footer { border-top: 1px solid var(--line); padding: 12px 16px; }
+.status-line {
+  font-size: 10px;
+  color: var(--text-3);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  letter-spacing: .5px;
 }
-.aside-footer {
-  padding: 14px 18px;
-  color: #5d6b7c;
-  font-size: 11px;
-  border-top: 1px solid rgba(255, 255, 255, .06);
-}
+.dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+.dot.ok { background: var(--ok); box-shadow: 0 0 0 3px rgba(38, 179, 107, .15); }
+.ver { font-size: 10px; color: var(--text-3); margin-top: 5px; }
 
 /* ---------------- 右侧 ---------------- */
 .main-wrap { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 .header {
   height: 64px;
-  background: #fff;
+  flex-shrink: 0;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 22px;
-  box-shadow: 0 1px 4px rgba(0, 21, 41, .08);
-  z-index: 10;
+  padding: 0 20px;
 }
-.page-title { font-size: 17px; font-weight: 600; color: #1f2d3d; }
-.header-right { display: flex; align-items: center; gap: 10px; }
-.role-tag { border: none; }
-.avatar {
-  background: linear-gradient(135deg, #409eff, #6ab0ff);
-  color: #fff;
-  font-size: 13px;
+.header-left { display: flex; flex-direction: column; gap: 1px; }
+.crumb { font-size: 10px; color: var(--text-3); letter-spacing: .5px; }
+.page-title { font-size: 16px; font-weight: 600; color: var(--text); }
+.header-right { display: flex; align-items: center; gap: 14px; }
+.role { font-size: 11px; color: var(--accent); letter-spacing: 1px; }
+.user { display: flex; align-items: center; gap: 8px; }
+.avatar { background: var(--accent); color: #fff; font-size: 12px; border-radius: 2px; }
+.username { font-size: 12px; color: var(--text-2); }
+.logout {
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: var(--text-2);
+  background: transparent;
+  border: 1px solid var(--line-2);
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: all .15s;
 }
-.username { font-size: 14px; color: #303133; }
-.logout-btn { display: flex; align-items: center; gap: 4px; color: #606266; }
-.logout-btn:hover { color: #409eff; }
+.logout:hover { color: #fff; background: var(--danger); border-color: var(--danger); }
 
-.content {
-  flex: 1;
-  background: #f0f2f5;
-  padding: 20px;
-  overflow-y: auto;
-}
+.content { flex: 1; overflow-y: auto; padding: 18px; background: var(--bg-sub); }
 </style>

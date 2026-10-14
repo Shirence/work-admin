@@ -1,11 +1,14 @@
 <template>
   <div>
-    <div class="page-header">
-      <h2>用户管理</h2>
-      <p>维护系统用户信息，支持搜索、新增、编辑与删除</p>
+    <div class="page-head">
+      <div>
+        <div class="crumb mono">// USER.MANAGEMENT</div>
+        <h2>用户管理</h2>
+      </div>
+      <div class="head-tag mono">{{ tableData.length }} RECORDS</div>
     </div>
 
-    <el-card shadow="never" class="main-card">
+    <section class="panel hud">
       <div class="toolbar">
         <div class="toolbar-left">
           <el-input
@@ -46,20 +49,27 @@
         ref="tableRef"
         v-loading="loading"
         :data="tableData"
-        stripe
         class="user-table"
-        :header-cell-style="{ background: '#fafafa', color: '#606266', fontWeight: '600' }"
+        :header-cell-style="{ background: '#f4f7fa', color: '#56687a', fontWeight: '600', fontSize: '12px' }"
         @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="50" />
-        <el-table-column label="ID" prop="id" width="80" />
-        <el-table-column label="用户名" prop="username" min-width="120" />
-        <el-table-column label="手机号" prop="phone" min-width="140" />
-        <el-table-column label="角色" prop="role" width="120">
+        <el-table-column label="ID" prop="id" width="80">
           <template #default="{ row }">
-            <el-tag :type="row.role === 'admin' ? 'danger' : 'info'" effect="light" round>
-              {{ row.role === 'admin' ? '管理员' : '普通用户' }}
-            </el-tag>
+            <span class="mono id-cell">{{ row.id }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="用户名" prop="username" min-width="120" />
+        <el-table-column label="手机号" prop="phone" min-width="140">
+          <template #default="{ row }">
+            <span class="mono">{{ row.phone }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="角色" prop="role" width="130">
+          <template #default="{ row }">
+            <span class="role-chip mono" :class="row.role === 'admin' ? 'is-admin' : 'is-user'">
+              {{ row.role === 'admin' ? 'ADMIN' : 'USER' }}
+            </span>
           </template>
         </el-table-column>
         <el-table-column label="操作" width="150" align="center">
@@ -77,7 +87,7 @@
         :submitting="submitting"
         @submit="submitForm"
       />
-    </el-card>
+    </section>
   </div>
 </template>
 
@@ -92,20 +102,19 @@ export default {
     return {
       query: { keyword: "" },
       tableData: [],
-      loading: false,      // 表格加载状态
-      submitting: false,   // 弹窗提交按钮 loading
-      deleting: false,     // 批量删除 loading
-      selectedRows: [],    // 表格勾选的行
+      loading: false,
+      submitting: false,
+      deleting: false,
+      selectedRows: [],
       dialogVisible: false,
       dialogTitle: "新增用户",
-      currentRow: {}       // 传给弹窗的那一行数据
+      currentRow: {}
     }
   },
   created() {
     this.fetchList()
   },
   methods: {
-    // 按钮权限判断
     can(permission) {
       return this.$store.state.userInfo?.permissions?.includes(permission) || false
     },
@@ -212,16 +221,28 @@ export default {
 </script>
 
 <style scoped>
-.page-header { margin-bottom: 16px; }
-.page-header h2 {
-  font-size: 20px;
-  font-weight: 600;
-  color: #1f2d3d;
-  margin-bottom: 4px;
+.page-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 14px;
 }
-.page-header p { font-size: 13px; color: #909399; }
+.crumb { font-size: 10px; color: var(--text-3); letter-spacing: 1.5px; margin-bottom: 3px; }
+.page-head h2 { font-size: 19px; font-weight: 600; color: var(--text); }
+.head-tag {
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--accent);
+  border: 1px solid rgba(0, 166, 224, .35);
+  background: var(--accent-soft);
+  padding: 3px 8px;
+}
 
-.main-card { border: none; border-radius: 10px; }
+.panel {
+  background: var(--bg);
+  border: 1px solid var(--line);
+  padding: 16px;
+}
 
 .toolbar {
   display: flex;
@@ -229,14 +250,25 @@ export default {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 10px;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 .toolbar-left { display: flex; align-items: center; gap: 10px; }
 .toolbar-right { display: flex; align-items: center; gap: 10px; }
 .search-input { width: 240px; }
 .btn-icon { margin-right: 4px; }
 
-.user-table { border-radius: 8px; }
-.user-table :deep(th.el-table__cell) { background: #fafafa !important; }
-.user-table :deep(.el-table__row:hover > td) { background: #f5f9ff !important; }
+.user-table :deep(.el-table__inner-wrapper::before) { display: none; }
+.user-table :deep(td.el-table__cell) { border-bottom: 1px solid #eef2f6; }
+.user-table :deep(.el-table__row:hover > td) { background: var(--accent-soft) !important; }
+
+.id-cell { color: var(--text-3); font-size: 12px; }
+.role-chip {
+  display: inline-block;
+  font-size: 10px;
+  letter-spacing: 1px;
+  padding: 2px 8px;
+  border: 1px solid;
+}
+.role-chip.is-admin { color: #00a6e0; border-color: rgba(0, 166, 224, .4); background: var(--accent-soft); }
+.role-chip.is-user { color: #56687a; border-color: #dce4ec; background: #f4f7fa; }
 </style>
