@@ -58,10 +58,14 @@
       </el-form>
 
       <footer class="card-foot">
-        <button type="button" class="link-btn" @click="switchMode(mode === 'login' ? 'register' : 'login')">
-          {{ mode === 'login' ? '没有远程账号？注册一个 →' : '已有远程账号？去登录 →' }}
+        <span v-if="mode === 'register'" class="u-label">注册后自动绑定 member 角色</span>
+        <button v-else type="button" class="link-btn" @click="switchMode('register')">
+          没有远程账号？注册一个 →
         </button>
-        <router-link class="link" to="/login">← 返回本地登录</router-link>
+        <button v-if="mode === 'register'" type="button" class="link-btn" @click="switchMode('login')">
+          ← 返回登录
+        </button>
+        <router-link v-else class="link" to="/login">← 返回本地登录</router-link>
       </footer>
     </div>
 
