@@ -29,6 +29,8 @@ public interface ChatDeviceRepository extends JpaRepository<ChatDevice, Long> {
 
     long countByUsernameAndStatus(String username, String status);
 
+    long countByStatus(String status);
+
     @Query("select coalesce(max(d.deviceId), 0) from ChatDevice d where d.username = :username")
     Integer findMaxDeviceId(@Param("username") String username);
 

@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -23,4 +24,7 @@ public interface ChatMessageRepository extends JpaRepository<ChatMessage, Long> 
     Long findMaxServerSeq(@Param("conversationId") Long conversationId);
 
     long countByConversationIdAndServerSeqGreaterThan(Long conversationId, Long afterSeq);
+
+    @Query("select m.createdAt from ChatMessage m where m.createdAt >= :from")
+    List<LocalDateTime> findCreatedAtAfter(@Param("from") LocalDateTime from);
 }

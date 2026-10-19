@@ -1,10 +1,9 @@
-# 远程 MySQL：只读观察台 + 远程账号群聊
+# 远程 MySQL：远程账号群聊
 
-> H2 仍然是主库。远程 MySQL 提供两类能力：
-> 1. 管理员只读观察台（查看所有人的群组/消息）；
-> 2. 使用远程 `demo.user` 账号登录，进入远程群聊、收发消息。
+> H2 是本地主库；远程 MySQL 只服务独立的远程账号体系。
+> 远程登录后只显示远程消息，本地登录后只显示本地消息，两者完全独立。
 >
-> 最后验证：2026-10-19（远程 `demo` 库；远程账号 `admin` 登录、建群、双人聊天、幂等、权限隔离均通过）
+> 最后验证：2026-10-19（远程 `demo` 库；远程账号登录、建群、双人聊天、幂等、权限隔离均通过）
 
 ## 1. 配置
 
@@ -30,13 +29,13 @@ $env:REMOTE_MYSQL_USERNAME='stu'
 $env:REMOTE_MYSQL_PASSWORD='******'
 ```
 
-`application.yml` 默认 `enabled=false`。未配置时 H2 业务照常启动，远程接口返回 503。
+`application.yml` 默认 `enabled=false`。未配置时 H2 业务照常启动，远程登录/群聊接口返回 503。
 
-## 2. 三个连接池 / 事务边界
+## 2. 连接池 / 事务边界
 
 | 组件 | 用途 | 特性 |
 |---|---|---|
-| `remoteMysqlDataSource` | 观察台 / 远程登录查询 | readOnly=true，最多 3 连接 |
+| `remoteMysqlDataSource` | 远程登录查询 | readOnly=true，最多 3 连接 |
 | `remoteChatDataSource` | 远程群聊写入 | 读写，最多 5 连接 |
 | `remoteChatTransactionManager` | 远程群聊事务 | READ_COMMITTED，独立于 H2 |
 | 主 `dataSource` + `transactionManager` | H2 / JPA | `@Primary`，本地业务 |
@@ -45,7 +44,6 @@ $env:REMOTE_MYSQL_PASSWORD='******'
 
 ## 3. 安全边界
 
-- 管理员观察台 `/api/remote/**`：仅 `role=admin`。
 - 远程账号登录 `/api/remote-auth/login`：公开接口，账号密码校验远程 `user` 表。
 - 远程群聊 `/api/remote-chat/**`：必须 `authSource=REMOTE` 的 token。
 - 远程 token 只能访问 `/api/remote-auth/**` 和 `/api/remote-chat/**`；
@@ -55,20 +53,7 @@ $env:REMOTE_MYSQL_PASSWORD='******'
 - 远程聊天消息在 `chat_message` 中是**明文**（stu 库本身如此），不是 E2EE。
 - 凭据不进入 Git；如果长期使用，建议把 `stu` 这个宽权限账号换成只授予所需表的专用账号。
 
-## 4. 接口
-
-### 4.1 管理员只读观察台
-
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| GET | `/api/remote/overview` | 数据库名、版本、主机、群/成员/消息/用户数、延迟 |
-| GET | `/api/remote/groups?keyword=&limit=` | 群列表（群主、成员数、消息数、最后消息时间） |
-| GET | `/api/remote/groups/{id}` | 群详情 + 成员 |
-| GET | `/api/remote/groups/{id}/messages?afterId=&limit=` | 群消息增量 |
-| GET | `/api/remote/messages?keyword=&groupId=&limit=` | 跨群/按群检索最近消息 |
-| GET | `/api/remote/users?keyword=&limit=` | 用户 + RBAC 角色（不返回密码） |
-
-### 4.2 远程账号登录 / 注册
+## 4. 远程账号登录 / 注册
 
 | 方法 | 路径 | 请求体 |
 |---|---|---|
@@ -98,7 +83,7 @@ $env:REMOTE_MYSQL_PASSWORD='******'
 }
 ```
 
-### 4.3 远程群聊
+## 5. 远程群聊接口
 
 | 方法 | 路径 | 说明 |
 |---|---|---|
@@ -118,23 +103,21 @@ $env:REMOTE_MYSQL_PASSWORD='******'
 - 发送者身份取自远程 token 的 `remoteUserId`，不信任客户端传入的 senderId。
 - 消息写入后，stu 项目刷新历史即可看到；本项目页面用 3 秒轮询增量刷新（不是 WebSocket）。
 
-## 5. 前端页面
+## 6. 前端页面
 
 | 路径 | 说明 |
 |---|---|
-| `/remote` | 管理员只读观察台（本地 admin 登录后访问） |
 | `/remote-login` | 远程 stu 账号登录（独立登录态） |
 | `/remote-register` | 远程 stu 账号注册；注册成功自动登录 |
 | `/remote-chat` | 远程群聊：群列表、加入、新建、历史、发消息 |
-| `/chat` | 本地 H2 E2EE 聊天；页头有「本地 H2 / 远程 MySQL」切换 |
-| 远程聊天入口 | 只从 `/remote-login` 或 `/remote-register` 成功后进入，不出现在本地侧栏 |
+| `/chat` | 本地 H2 E2EE 聊天，只显示本地消息 |
 
+远程聊天不出现在本地侧栏，只从 `/remote-login` 或 `/remote-register` 成功后进入。
 远程登录态使用 `localStorage.remoteToken` / `remoteUserInfo`，与本地 `token` / `userInfo` 完全分离。
-本地登录页也提供「远程账号登录 →」入口。
 
-## 6. 远程表结构
+## 7. 远程表结构
 
-观察台和远程群聊按 `stu` 当前 schema 查询/写入：
+远程群聊按 `stu` 当前 schema 查询/写入：
 
 - `chat_group(id, name, owner_id, created_at)`
 - `chat_member(group_id, user_id, joined_at, joined_after_id, history_start_id)`
@@ -142,9 +125,9 @@ $env:REMOTE_MYSQL_PASSWORD='******'
 - `user(id, name, account, passwd)`
 - `sys_user_role(user_id, role_id)`、`sys_role(id, name, code)`
 
-如果远程 schema 变化，修改 `RemoteMysqlService` / `RemoteChatService` 中的 SQL。
+如果远程 schema 变化，修改 `RemoteChatService` / `RemoteAuthService` 中的 SQL。
 
-## 7. 验证
+## 8. 验证
 
 ```powershell
 cd E:\my-project\work-admin\server
@@ -164,8 +147,7 @@ remote-mysql-chat - Start completed.
 手工验证：
 
 1. 打开 `http://localhost:8080/login`，点击「远程账号登录 →」。
-2. 登录页右下角点击「注册账号 →」进入 `/remote-register`，填写昵称、账号、密码；注册成功后自动进入远程群聊。
+2. 远程登录页右下角点击「注册账号 →」进入 `/remote-register`，填写昵称、账号、密码；注册成功后自动进入远程群聊。
 3. 也可以直接用远程 `demo.user` 中已有账号登录。
 4. 进入 `/remote-chat`，选择群、加入、发消息。
 5. 另开浏览器用另一个远程账号登录同一群，验证消息可见。
-6. 管理员用本地 H2 admin 登录 `/remote`，可以只读查看远程群组和消息。

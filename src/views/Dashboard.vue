@@ -3,15 +3,15 @@
     <header class="page-head">
       <div>
         <h2>概览</h2>
-        <p class="u-hint">关键指标与趋势，数据来自后端接口</p>
+        <p class="u-hint">真实统计数据，来自本地 H2 数据库</p>
       </div>
-      <span class="u-label">Updated just now</span>
+      <span class="u-label">{{ updatedLabel }}</span>
     </header>
 
     <div class="bento">
       <article
         v-for="(s, i) in statCards"
-        :key="s.label"
+        :key="s.code"
         v-reveal="i * 70"
         class="tile tile-stat"
       >
@@ -28,8 +28,8 @@
 
       <article v-reveal="280" class="tile tile-chart col-8">
         <div class="tile-head">
-          <h3>月度任务完成情况</h3>
-          <span class="u-label">6 months</span>
+          <h3>近 6 日消息量</h3>
+          <span class="u-label">LOCAL H2</span>
         </div>
         <div ref="barRef" class="chart" style="height:300px"></div>
       </article>
@@ -37,9 +37,12 @@
       <article v-reveal="340" class="tile tile-chart col-4">
         <div class="tile-head">
           <h3>用户角色分布</h3>
-          <span class="u-label">realtime</span>
+          <span class="u-label">REALTIME</span>
         </div>
-        <div ref="pieRef" class="chart" style="height:300px"></div>
+        <div class="chart-wrap">
+          <div ref="pieRef" class="chart" style="height:300px"></div>
+          <div v-if="!users.length" class="chart-empty">0</div>
+        </div>
       </article>
     </div>
   </div>
@@ -48,41 +51,48 @@
 <script>
 import * as echarts from 'echarts'
 import { getUserList } from '../api/user'
+import { getDashboardStats } from '../api/dashboard'
+
+const EMPTY_STATS = {
+  userCount: 0,
+  accountCount: 0,
+  conversationCount: 0,
+  messageCount: 0,
+  deviceCount: 0,
+  activeDeviceCount: 0,
+  dailyMessages: [],
+  fetchedAt: null
+}
 
 export default {
-  name: "Dashboard",
+  name: 'Dashboard',
   data() {
     return {
       users: [],
+      stats: { ...EMPTY_STATS },
       loading: false,
       barChart: null,
       pieChart: null
     }
   },
   computed: {
-    userCount() {
-      return this.users.length
-    },
-    roleStats() {
-      let admin = 0
-      let normal = 0
-      this.users.forEach(u => {
-        if (u.role === 'admin') admin++
-        else normal++
-      })
-      return { admin, normal }
-    },
     statCards() {
       return [
-        { code: 'USR.TOTAL', label: '用户总数', value: this.userCount, icon: 'UserFilled', color: '#5ef2d6' },
-        { code: 'TASK.PENDING', label: '待办任务', value: 18, icon: 'Clock', color: '#f4d35e' },
-        { code: 'TASK.DONE', label: '已完成任务', value: 421, icon: 'CircleCheck', color: '#58a6ff' },
-        { code: 'SYS.MSG', label: '系统消息', value: 6, icon: 'Bell', color: '#ff3d81' }
+        { code: 'USR.TOTAL', label: '用户总数', value: this.stats.userCount || 0, icon: 'UserFilled', color: 'var(--accent)' },
+        { code: 'CHAT.ROOMS', label: '会话总数', value: this.stats.conversationCount || 0, icon: 'ChatDotRound', color: 'var(--ice)' },
+        { code: 'CHAT.MSG', label: '消息总数', value: this.stats.messageCount || 0, icon: 'Bell', color: 'var(--violet)' },
+        { code: 'DEV.ACTIVE', label: '活跃设备', value: this.stats.activeDeviceCount || 0, icon: 'DataLine', color: 'var(--warn)' }
       ]
+    },
+    updatedLabel() {
+      if (!this.stats.fetchedAt) return 'NO DATA'
+      const date = new Date(this.stats.fetchedAt)
+      if (Number.isNaN(date.getTime())) return 'NO DATA'
+      return `UPDATED ${date.toLocaleTimeString('zh-CN', { hour12: false })}`
     }
   },
   created() {
-    this.fetchUsers()
+    this.fetchAll()
   },
   mounted() {
     this.initBarChart()
@@ -97,15 +107,22 @@ export default {
     this.pieChart && this.pieChart.dispose()
   },
   methods: {
-    async fetchUsers() {
+    async fetchAll() {
       this.loading = true
       try {
-        const res = await getUserList({})
-        if (res.code === 200) {
-          this.users = res.data || []
-          this.updatePieChart()
-        }
+        const [statsRes, usersRes] = await Promise.all([
+          getDashboardStats(),
+          getUserList({})
+        ])
+        this.stats = { ...EMPTY_STATS, ...(statsRes.data || {}) }
+        this.users = usersRes.data || []
+        this.updateBarChart()
+        this.updatePieChart()
       } catch (e) {
+        this.stats = { ...EMPTY_STATS }
+        this.users = []
+        this.updateBarChart()
+        this.updatePieChart()
         this.$message.error('获取统计数据失败')
         console.error(e)
       } finally {
@@ -115,37 +132,31 @@ export default {
 
     initBarChart() {
       const p = this.chartPalette()
+      const daily = this.stats.dailyMessages || []
       this.barChart = echarts.init(this.$refs.barRef)
       this.barChart.setOption({
         tooltip: { trigger: 'axis', borderWidth: 1, borderColor: p.tooltipBorder, backgroundColor: p.tooltipBg, textStyle: { color: p.text, fontSize: 12 } },
-        legend: { data: ['已完成', '待办'], top: 0, right: 0, icon: 'rect', itemWidth: 10, itemHeight: 10, textStyle: { color: p.muted, fontSize: 12 } },
-        grid: { left: 8, right: 8, bottom: 4, top: 44, containLabel: true },
+        grid: { left: 8, right: 8, bottom: 4, top: 24, containLabel: true },
         xAxis: {
           type: 'category',
-          data: ['1月', '2月', '3月', '4月', '5月', '6月'],
+          data: daily.map(d => d.date),
           axisLine: { lineStyle: { color: p.line } },
           axisTick: { show: false },
           axisLabel: { color: p.faint, fontSize: 11 }
         },
         yAxis: {
           type: 'value',
+          minInterval: 1,
           splitLine: { lineStyle: { color: p.split } },
           axisLabel: { color: p.faint, fontSize: 11 }
         },
         series: [
           {
-            name: '已完成',
+            name: '消息数',
             type: 'bar',
-            barWidth: 12,
+            barWidth: 14,
             itemStyle: { color: p.bar1, borderRadius: [2, 2, 0, 0] },
-            data: [120, 200, 150, 80, 70, 110]
-          },
-          {
-            name: '待办',
-            type: 'bar',
-            barWidth: 12,
-            itemStyle: { color: p.bar2, borderRadius: [2, 2, 0, 0] },
-            data: [20, 32, 18, 30, 25, 12]
+            data: daily.map(d => d.count)
           }
         ]
       })
@@ -167,11 +178,38 @@ export default {
             itemStyle: { borderColor: p.pieBorder, borderWidth: 3 },
             label: { show: false },
             labelLine: { show: false },
-            data: []
+            data: this.pieData()
           }
         ]
       })
-      this.updatePieChart()
+    },
+
+    pieData() {
+      let admin = 0
+      let normal = 0
+      this.users.forEach(u => {
+        if (u.role === 'admin') admin++
+        else normal++
+      })
+      if (!admin && !normal) return []
+      return [
+        { name: '管理员', value: admin },
+        { name: '普通用户', value: normal }
+      ]
+    },
+
+    updateBarChart() {
+      if (!this.barChart) return
+      const daily = this.stats.dailyMessages || []
+      this.barChart.setOption({
+        xAxis: { data: daily.map(d => d.date) },
+        series: [{ data: daily.map(d => d.count) }]
+      })
+    },
+
+    updatePieChart() {
+      if (!this.pieChart) return
+      this.pieChart.setOption({ series: [{ data: this.pieData() }] })
     },
 
     chartPalette() {
@@ -186,7 +224,6 @@ export default {
             line: 'rgba(126,196,208,.20)',
             split: 'rgba(126,196,208,.08)',
             bar1: '#5ef2d6',
-            bar2: '#ff3d81',
             pieSecond: '#58a6ff',
             pieBorder: '#0a1018'
           }
@@ -199,7 +236,6 @@ export default {
             line: 'rgba(8,40,45,.16)',
             split: 'rgba(8,40,45,.07)',
             bar1: '#00a88f',
-            bar2: '#d61f69',
             pieSecond: '#0b6fd0',
             pieBorder: '#ffffff'
           }
@@ -214,20 +250,6 @@ export default {
       })
     },
 
-    updatePieChart() {
-      if (!this.pieChart) return
-      this.pieChart.setOption({
-        series: [
-          {
-            data: [
-              { value: this.roleStats.admin, name: '管理员' },
-              { value: this.roleStats.normal, name: '普通用户' }
-            ]
-          }
-        ]
-      })
-    },
-
     handleResize() {
       this.barChart && this.barChart.resize()
       this.pieChart && this.pieChart.resize()
@@ -237,8 +259,7 @@ export default {
 </script>
 
 <style scoped>
-.page { display: flex; flex-direction: column; gap: 20px; }
-.page-head { display: flex; align-items: flex-end; justify-content: space-between; }
+.page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
 .page-head h2 { font-size: 24px; font-weight: 700; letter-spacing: -.04em; margin-bottom: 4px; }
 
 /* Bento 栅格 */
@@ -269,7 +290,7 @@ export default {
 }
 .tile:hover {
   transform: translateY(-3px);
-  box-shadow: var(--shadow-md), 0 0 40px -24px rgba(94, 242, 214, .5);
+  box-shadow: var(--shadow-md), 0 0 40px -24px color-mix(in srgb, var(--accent) 55%, transparent);
   border-color: var(--line-2);
 }
 
@@ -295,6 +316,20 @@ export default {
 .tile-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
 .tile-head h3 { font-family: var(--display); font-size: 15px; font-weight: 600; letter-spacing: -.02em; }
 .chart { width: 100%; }
+.chart-wrap { position: relative; }
+.chart-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: .12em;
+  color: var(--text-3);
+  text-transform: uppercase;
+  pointer-events: none;
+}
 
 @media (max-width: 1200px) {
   .tile-stat { grid-column: span 6; }

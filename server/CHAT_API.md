@@ -166,16 +166,15 @@ java -jar target\work-admin-server-1.0.0.jar
 `clientMessageId` 幂等、逐设备密文分发、新设备 PENDING/授权/历史 grant、
 设备级已读游标、建群全局/账号权限、群成员版本号、群消息 fanout、管理员重置设备。
 
-## 9. 远程 MySQL：观察台与远程账号群聊
+## 9. 远程 MySQL：远程账号群聊
 
-主库仍是 H2；另外挂了一个远程 MySQL 连接：
+主库仍是 H2；另外挂了一个远程 MySQL 连接，只服务独立的远程账号体系：
 
-- **管理员只读观察台**：本地 admin 登录 `/remote`，查看 `stu` 库所有人的群组/消息。
 - **远程账号群聊**：`/remote-login` 用远程 `demo.user` 账号登录，`/remote-chat` 加入群聊、读历史、发消息。
+- 本地登录与远程登录完全独立：本地只显示本地 H2 消息，远程只显示远程 MySQL 消息。
 
 接口：
 
-- 观察台：`/api/remote/overview|groups|messages|users`（仅本地 admin）
 - 远程登录/注册：`/api/remote-auth/login|register|me|logout`
 - 远程聊天：`/api/remote-chat/groups|join|messages`（仅远程 token）
 
@@ -204,8 +203,8 @@ java -jar target\work-admin-server-1.0.0.jar
 - 多设备：第二台设备注册后 PENDING，现有设备在「设备」对话框批准；
   新设备只能解密批准后发给它的消息。
 - 构建注意：`vue.config.js` 对 libsignal 的 curve25519 wasm 包设置 `resolve.fallback.fs=false`。
-- 数据源切换：本地 `/chat` 页头「本地 H2 / 远程 MySQL」，远程 `/remote-chat`
-  页头「本地 H2 / 远程 MySQL」；侧栏还有「远程聊天」入口。
+- 本地与远程完全独立：本地登录只显示本地 H2 消息，远程登录只显示远程 MySQL 消息；
+  远程聊天只从远程登录/注册进入，不出现在本地侧栏。
 
 已实测：Node 端两个真实 libsignal 设备通过该后端完成
 `PreKeyWhisperMessage` 发送 → 对方解密 → `WhisperMessage` 回复 → 原设备解密。

@@ -53,12 +53,6 @@ const routes = [
         name: 'User',
         component: () => import('../views/User.vue'),
         meta: { title: '用户管理', icon: 'User', menu: true, roles: ['admin', 'manager'] }
-      },
-      {
-        path: 'remote',
-        name: 'RemoteChat',
-        component: () => import('../views/RemoteChat.vue'),
-        meta: { title: '远程观察', icon: 'ChatDotRound', menu: true, roles: ['admin'] }
       }
     ]
   }

@@ -17,17 +17,11 @@
           <span class="nav-title">远程聊天</span>
           <span class="nav-index mono">01</span>
         </button>
-        <button type="button" class="nav-item" @click="goLocalChat">
-          <span class="nav-rail"></span>
-          <el-icon class="nav-icon"><House /></el-icon>
-          <span class="nav-title">本地聊天</span>
-          <span class="nav-index mono">02</span>
-        </button>
         <button type="button" class="nav-item" @click="handleLogout">
           <span class="nav-rail"></span>
           <el-icon class="nav-icon"><SwitchButton /></el-icon>
           <span class="nav-title">退出远程</span>
-          <span class="nav-index mono">03</span>
+          <span class="nav-index mono">02</span>
         </button>
       </nav>
 
@@ -52,7 +46,6 @@
             <small class="u-label">@{{ account }}</small>
           </div>
           <ThemeToggle />
-          <SourceSwitch mode="remote" @change="onSourceChange" />
           <button class="btn-ghost mono" type="button" @click="handleLogout">EXIT</button>
         </div>
       </header>
@@ -220,11 +213,10 @@ import {
   sendRemoteChatMessage
 } from '../api/remoteChat'
 import ThemeToggle from '../components/ThemeToggle.vue'
-import SourceSwitch from '../components/SourceSwitch.vue'
 
 export default {
   name: 'RemoteChatRoom',
-  components: { ThemeToggle, SourceSwitch },
+  components: { ThemeToggle },
   data() {
     return {
       userInfo: {},
@@ -434,18 +426,6 @@ export default {
       }
       this.clearSession()
       this.$router.replace('/remote-login')
-    },
-
-    goLocalChat() {
-      if (localStorage.getItem('token')) {
-        this.$router.push('/chat')
-      } else {
-        this.$router.push('/login')
-      }
-    },
-
-    onSourceChange(mode) {
-      if (mode === 'local') this.goLocalChat()
     },
 
     clearSession() {

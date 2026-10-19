@@ -69,7 +69,7 @@ npm run serve
 | 构建 | Vue CLI 5（webpack 5）+ Babel |
 | 后端 | Spring Boot 3.5.16 + Spring Web + Spring Data JPA + Bean Validation |
 | 数据库 | H2 文件库（`jdbc:h2:file:./data/workadmin`，文件在 `server/data/workadmin.mv.db`） |
-| 远程 MySQL | MySQL Connector/J + 只读观察池 + 可写聊天池；支持远程 stu 账号登录、加入群聊、收发消息 |
+| 远程 MySQL | MySQL Connector/J + 只读查询池 + 可写聊天池；支持远程 stu 账号登录/注册、加入群聊、收发消息 |
 | 密码 | `spring-security-crypto` 的 BCrypt（**不引完整 Spring Security**） |
 | JDK / Maven | JDK 17+（本机用 jdk-22）；Maven 3.9.16 |
 
@@ -107,7 +107,7 @@ work-admin/
 │   │   ├── request.js          # axios 实例 + 请求拦截器(token) + 响应拦截器(拆包/401)
 │   │   ├── auth.js             # login / register / logout / getMe
 │   │   ├── user.js             # getUserList / addUser / editUser / delUser
-│   │   ├── remote.js           # 远程 MySQL 观察台（仅 admin）
+│   │   ├── dashboard.js        # /dashboard/stats 真实统计
 │   │   ├── remoteChat.js       # 远程 stu 账号登录 + 远程群聊
 │   │   └── chat.js             # 本地 E2EE 聊天 API（设备/会话/消息）
 │   ├── components/
@@ -129,16 +129,14 @@ work-admin/
 │   │   ├── chatCrypto.js       # 设备密钥生成、会话建立、逐设备加解密
 │   │   └── theme.js            # light/dark 主题持久化与切换
 │   ├── components/
-│   │   ├── ThemeToggle.vue     # light/dark 主题切换按钮
-│   │   └── SourceSwitch.vue    # 本地 H2 / 远程 MySQL 统一切换
+│   │   └── ThemeToggle.vue     # light/dark 主题切换按钮
 │   ├── views/
 │   │   ├── Layout.vue          # 中台骨架（玻璃顶栏 + 侧栏 + 内容区）
 │   │   ├── Login.vue
 │   │   ├── Register.vue
-│   │   ├── Dashboard.vue       # Bento 栅格 + ECharts + 实时用户统计
+│   │   ├── Dashboard.vue       # Bento 栅格 + ECharts + /api/dashboard/stats 真实统计
 │   │   ├── Chat.vue            # 本地 E2EE 消息页（设备初始化/会话/收发）
 │   │   ├── User.vue
-│   │   ├── RemoteChat.vue      # 远程 MySQL 群聊/消息观察台（admin）
 │   │   ├── RemoteLogin.vue     # 远程 stu 账号登录
 │   │   ├── RemoteRegister.vue  # 远程 stu 账号注册
 │   │   └── RemoteChatRoom.vue  # 远程群聊（加入/建群/收发消息）
@@ -146,7 +144,7 @@ work-admin/
 │   └── main.js                 # 入口：注册图标 / v-reveal / Mock 开关
 ├── server/                     # 见第 5 节
 │   ├── CHAT_API.md             # 聊天后端接口
-│   ├── REMOTE_MYSQL.md         # 远程 MySQL 只读观察台
+│   ├── REMOTE_MYSQL.md         # 远程 MySQL 账号群聊
 │   └── application-local.yml   # 远程库凭据（已 gitignore，运行时加载）
 ├── deploy/nginx.conf           # history 回退 + /api 反代
 ├── .env.development            # VUE_APP_USE_MOCK=false
@@ -178,12 +176,14 @@ com.example.workadmin
 │   └── DataInitializer.java        # 启动时种 demo 数据
 ├── controller/
 │   ├── AuthController.java         # /api/login /register /logout /me /health
+│   ├── DashboardController.java    # /api/dashboard/stats 真实统计
 │   └── UserController.java         # /api/user/list /add /edit /delete
 ├── dto/
 │   ├── LoginRequest.java
 │   ├── LoginResponse.java          # { token, userInfo }
 │   ├── UserInfo.java               # { username, role, permissions }
 │   ├── UserRequest.java            # 用户 CRUD 入参
+│   ├── DashboardStats.java         # 用户/会话/消息/设备/近 6 日趋势
 │   └── RegisterRequest.java        # 注册入参（含 confirmPassword）
 ├── entity/
 │   ├── Account.java                # 登录账号表 sys_account（密码 BCrypt）
@@ -193,6 +193,7 @@ com.example.workadmin
 │   └── UserRepository.java
 └── service/
     ├── AuthService.java            # 登录/注册（查库 + BCrypt）
+    ├── DashboardService.java       # 仪表盘统计（H2 真实计数，无数据返回 0）
     ├── TokenStore.java             # 内存 token（ConcurrentHashMap）
     └── UserService.java            # 用户 CRUD
 ```
@@ -206,6 +207,7 @@ com.example.workadmin
 | POST | `/api/register` | 否 | `{username, password, confirmPassword, email}` | `{username, role, permissions}` |
 | POST | `/api/logout` | 是 | - | `null` |
 | GET | `/api/me` | 是 | - | `{username, role, permissions}` |
+| GET | `/api/dashboard/stats` | 是 | - | `{userCount, accountCount, conversationCount, messageCount, deviceCount, activeDeviceCount, dailyMessages:[{date,count}], fetchedAt}` |
 | GET | `/api/user/list?keyword=` | 是 | query | `[{id, username, phone, role}]` |
 | POST | `/api/user/add` | 是 | `{username, phone, role}` | 新增后的 User |
 | POST | `/api/user/edit` | 是 | `{id, username, phone, role}` | 编辑后的 User |
@@ -266,8 +268,6 @@ com.example.workadmin
 - 建群权限：`chat_group_policy`（全局）+ `chat_account_group_permission`（账号覆盖）
 - 服务端只存密文；新设备 PENDING，必须由已有 ACTIVE 设备授权后才能同步
 - 集成测试：`server/src/test/java/com/example/workadmin/ChatFlowIntegrationTest.java`（12 项）
-- 远程观察台：H2 主库之外额外挂一个**只读 MySQL**，管理员可在 `/remote`
-  查看 `stu` 库的群组、成员、消息；配置见 `server/REMOTE_MYSQL.md`。远程不可用不影响 H2。
 - 远程账号群聊：`/remote-login` 用远程 `demo.user` 账号登录或注册（独立 `remoteToken`），
   `/remote-chat` 可加入群聊、读历史、发消息；写入远程 `chat_group/chat_member/chat_message`。
   远程 token 只能访问 `/api/remote-auth/**` 和 `/api/remote-chat/**`，不能调用本地 H2 接口。
@@ -278,8 +278,8 @@ com.example.workadmin
 - 新设备：第二台设备注册后为 PENDING，现有设备在「设备」对话框批准后激活；
   批准前无法同步，批准后只能解密之后发给它的消息（旧消息需额外历史密钥授权）。
 - Vue 构建：`vue.config.js` 里给 libsignal 的 curve25519 wasm 包设置 `resolve.fallback.fs=false`。
-- 数据源切换：本地 `/chat` 页头有「本地 H2 / 远程 MySQL」切换；远程 `/remote-chat`
-  页头有「本地 H2 / 远程 MySQL」切换。远程聊天不出现在本地侧栏，只从远程登录进入。
+- 本地 / 远程完全独立：本地登录只显示本地 H2 消息；远程登录只显示远程 MySQL 消息。
+  远程聊天不在本地侧栏出现，只从 `/remote-login` / `/remote-register` 成功后进入。
   远程聊天需要独立远程账号登录，本地 token 与 remoteToken 互不覆盖。
 
 ---
@@ -319,7 +319,6 @@ Spring Boot
    ├─ dashboard → Dashboard.vue  meta:{title:'仪表盘', icon:'House', menu:true, roles:[admin,manager,viewer]}
    ├─ chat      → Chat.vue       meta:{title:'消息', icon:'ChatDotRound', menu:true, roles:[admin,manager,viewer]}
    ├─ user      → User.vue       meta:{title:'用户管理', icon:'User', menu:true, roles:[admin,manager]}
-   └─ remote    → RemoteChat.vue meta:{title:'远程观察', icon:'ChatDotRound', menu:true, roles:[admin]}
 
 /remote-login → RemoteLogin.vue    （公开；远程 stu 账号登录）
 /remote-register → RemoteRegister.vue（公开；远程 stu 账号注册）
@@ -419,9 +418,6 @@ html {
 - `src/components/ThemeToggle.vue`
   - 顶栏/登录页右上角的 `LIGHT / DARK` 按钮
   - 已放在 `Layout.vue`、四个 auth 页、`RemoteChatRoom.vue`
-- `src/components/SourceSwitch.vue`
-  - 本地 `/chat` 与远程 `/remote-chat` 共用同一个「本地 H2 / 远程 MySQL」切换组件
-  - 两处 active 色、尺寸、字体完全一致
 - `main.js` 在挂载前 `initTheme()`，避免刷新闪白/闪黑
 - `Dashboard.vue` 监听 `theme-change`，销毁并重建 ECharts，保证图表颜色跟随主题
 
@@ -448,9 +444,8 @@ html {
 | `RemoteLogin.vue` / `RemoteRegister.vue` | 同上，但使用品红/冰蓝远程色系；注册独立为 `/remote-register` |
 | `Dashboard.vue` | Bento 栅格 + 主题感知的 ECharts（柱状/环形） |
 | `User.vue` | 页头 + 面板 + 表格；表头由全局深/浅色样式接管 |
-| `Chat.vue` | 本地 E2EE 消息页；顶部「本地 H2 / 远程 MySQL」切换 |
-| `RemoteChat.vue` | 管理员只读观察台；4 指标 + 群组/消息双栏 |
-| `RemoteChatRoom.vue` | 远程群聊；独立登录态 + 248px 远程侧栏 + 72px 顶栏 + ThemeToggle/SourceSwitch，和主 Layout 结构对齐 |
+| `Chat.vue` | 本地 E2EE 消息页；只显示本地 H2 消息 |
+| `RemoteChatRoom.vue` | 远程群聊；独立登录态 + 248px 远程侧栏 + 72px 顶栏 + ThemeToggle，和主 Layout 结构对齐；只显示远程消息 |
 
 ### 7.6 注意
 
@@ -476,7 +471,7 @@ mvn spring-boot:run                     # 开发启动（会加载 server/applic
 mvn -DskipTests package                 # 打包 → target/work-admin-server-1.0.0.jar
 java -jar target\work-admin-server-1.0.0.jar
 # 远程 MySQL 凭据放在 server/application-local.yml（已 gitignore）
-# 不配置时远程观察台返回 503，H2 业务照常运行
+# 不配置时远程登录/远程群聊返回 503，H2 业务照常运行
 
 # ---------- 部署 ----------
 npx serve -s dist           # 本地预览 dist（-s 必须有，history 模式需要回退）
@@ -494,7 +489,6 @@ npx serve -s dist           # 本地预览 dist（-s 必须有，history 模式�
 | **停掉后端再操作** | 前端报「获取列表失败」/ 500，说明确实依赖后端 |
 | **H2 控制台** | `http://localhost:8081/h2-console` 能看到 `sys_user` / `sys_account` 及聊天表 |
 | **重启后端** | H2 文件库数据保留（不再是内存库） |
-| **远程观察台** | admin 登录后打开 `/remote`，能看到远程库的群组/消息即说明 MySQL 旁路连接生效 |
 | **远程账号群聊** | 登录页点「远程账号登录 →」，可登录或注册远程账号；进入 `/remote-chat` 后能加入群并发消息即说明远程读写链路生效 |
 | **本地 E2EE 消息** | 登录后进入 `/chat`，首次会生成设备密钥；发送消息后 Network 里 `/api/chat/messages` 的 envelopes 是密文，接收端能显示明文即说明 libsignal 链路生效 |
 | **双主题** | 右上角 `LIGHT / DARK` 切换，刷新后保持；Dashboard 图表、Element Plus 表格/弹窗颜色一起变化 |
@@ -509,7 +503,7 @@ npx serve -s dist           # 本地预览 dist（-s 必须有，history 模式�
 
 1. **按课程文档（第 0~10 课）搭建前端**：Vue CLI 5 + Element Plus + Vuex + Router + Axios + MockJS + ECharts。
 2. **修复启动问题**：favicon 404、ChunkLoadError（`router.onError` 自动刷新）、端口冲突。
-3. **仪表盘接真数据**：用户总数 / 角色分布改为 `getUserList()` 计算。
+3. **仪表盘全部接真实统计**：`GET /api/dashboard/stats` 返回用户/会话/消息/设备/近 6 日消息量；角色分布由真实用户列表计算，没有数据时显示 0。
 4. **迁移项目**：`D:\Downloads\work-admin` → `E:\my-project\work-admin`（用 robocopy 排除 node_modules 后 `npm install`）。
 5. **切换 history 路由**：`createWebHistory` + `deploy/nginx.conf` 的 `try_files`。
 6. **新增 Spring Boot 后端**：`server/`，Spring Boot 3.5.16 + JPA + H2，接口对齐前端契约。

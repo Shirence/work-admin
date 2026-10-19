@@ -6,7 +6,6 @@
         <p class="u-hint">端到端加密 · 每设备独立密钥 · 服务端只存密文</p>
       </div>
       <div class="head-actions">
-        <SourceSwitch mode="local" @change="onSourceChange" />
         <template v-if="deviceState === 'active'">
           <span class="device-chip mono">DEVICE {{ localDevice.deviceId }}</span>
           <el-button size="small" @click="openPrivate">
@@ -251,13 +250,11 @@ import {
   encryptForDeviceBundles,
   decryptEnvelope
 } from '../utils/chatCrypto'
-import SourceSwitch from '../components/SourceSwitch.vue'
 
 const PLAIN_PREFIX = 'wa-plain'
 
 export default {
   name: 'Chat',
-  components: { SourceSwitch },
   data() {
     return {
       username: '',
@@ -625,18 +622,6 @@ export default {
     openPrivate() {
       this.privateTarget = ''
       this.privateVisible = true
-    },
-
-    goRemoteChat() {
-      if (localStorage.getItem('remoteToken')) {
-        this.$router.push('/remote-chat')
-      } else {
-        this.$router.push('/remote-login')
-      }
-    },
-
-    onSourceChange(mode) {
-      if (mode === 'remote') this.goRemoteChat()
     },
 
     async submitPrivate() {
