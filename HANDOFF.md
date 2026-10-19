@@ -451,7 +451,7 @@ html {
 | `User.vue` | 页头 + 面板 + 表格；表头由全局深/浅色样式接管 |
 | `Chat.vue` | 本地 E2EE 消息页；顶部「本地 H2 / 远程 MySQL」切换 |
 | `RemoteChat.vue` | 管理员只读观察台；4 指标 + 群组/消息双栏 |
-| `RemoteChatRoom.vue` | 远程群聊；独立登录态 + 主题切换 + 共用数据源切换；顶栏 72px，与主布局顶栏对齐 |
+| `RemoteChatRoom.vue` | 远程群聊；独立登录态 + 248px 远程侧栏 + 72px 顶栏 + ThemeToggle/SourceSwitch，和主 Layout 结构对齐 |
 
 ### 7.6 注意
 

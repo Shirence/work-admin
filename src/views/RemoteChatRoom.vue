@@ -1,27 +1,72 @@
 <template>
   <div class="remote-app mesh noise">
-    <header class="remote-top glass">
+    <aside class="remote-aside">
       <div class="brand">
         <div class="logo">S</div>
         <div class="brand-text">
-          <strong>STU REMOTE CHAT</strong>
-          <small class="u-label">远程 MySQL 群聊</small>
+          <strong>STU REMOTE</strong>
+          <small class="mono">远程群聊 · NODE R</small>
         </div>
       </div>
 
-      <div class="remote-user">
-        <span class="remote-badge mono">REMOTE</span>
-        <div class="who">
-          <strong>{{ displayName }}</strong>
-          <small class="u-label">@{{ account }}</small>
-        </div>
-        <ThemeToggle />
-        <SourceSwitch mode="remote" @change="onSourceChange" />
-        <button class="btn-ghost mono" type="button" @click="handleLogout">EXIT</button>
-      </div>
-    </header>
+      <div class="nav-group u-label">REMOTE NAV</div>
+      <nav class="remote-nav">
+        <button type="button" class="nav-item active">
+          <span class="nav-rail"></span>
+          <el-icon class="nav-icon"><ChatDotRound /></el-icon>
+          <span class="nav-title">远程聊天</span>
+          <span class="nav-index mono">01</span>
+        </button>
+        <button type="button" class="nav-item" @click="goLocalChat">
+          <span class="nav-rail"></span>
+          <el-icon class="nav-icon"><House /></el-icon>
+          <span class="nav-title">本地聊天</span>
+          <span class="nav-index mono">02</span>
+        </button>
+        <button type="button" class="nav-item" @click="handleLogout">
+          <span class="nav-rail"></span>
+          <el-icon class="nav-icon"><SwitchButton /></el-icon>
+          <span class="nav-title">退出远程</span>
+          <span class="nav-index mono">03</span>
+        </button>
+      </nav>
 
-    <main class="remote-main">
+      <div class="aside-foot">
+        <div class="status"><span class="dot"></span><span class="mono">LINK STABLE</span></div>
+        <div class="u-label">REMOTE</div>
+      </div>
+    </aside>
+
+    <div class="remote-content">
+      <header class="remote-top glass">
+        <div class="topbar-left">
+          <div class="u-label topbar-path">// REMOTE CHAT</div>
+          <h1 class="page-title">远程聊天</h1>
+        </div>
+
+        <div class="topbar-right">
+          <span class="sys-status mono"><span class="dot"></span>SYS.REMOTE</span>
+          <span class="remote-badge mono">REMOTE</span>
+          <div class="who">
+            <strong>{{ displayName }}</strong>
+            <small class="u-label">@{{ account }}</small>
+          </div>
+          <ThemeToggle />
+          <SourceSwitch mode="remote" @change="onSourceChange" />
+          <button class="btn-ghost mono" type="button" @click="handleLogout">EXIT</button>
+        </div>
+      </header>
+
+      <main class="remote-main">
+        <header class="page-head">
+          <div>
+            <h2>远程群聊</h2>
+            <p class="u-hint">独立远程账号 · 群组与消息写入远程 MySQL</p>
+          </div>
+          <span class="u-label">{{ groups.length }} groups</span>
+        </header>
+
+        <section class="remote-workspace">
       <aside class="panel group-panel">
         <div class="panel-head">
           <div>
@@ -144,8 +189,10 @@
         <div v-else class="empty-state">
           <el-empty description="选择左侧群聊开始" :image-size="96" />
         </div>
-      </section>
-    </main>
+        </section>
+        </section>
+      </main>
+    </div>
 
     <el-dialog v-model="createVisible" title="新建远程群聊" width="420px">
       <div class="dialog-body">
@@ -449,11 +496,134 @@ export default {
 
 <style scoped>
 .remote-app {
-  min-height: 100vh;
+  height: 100vh;
   display: flex;
-  flex-direction: column;
+  overflow: hidden;
   background: var(--bg);
 }
+
+/* 左侧栏：与主 Layout 保持同一结构 */
+.remote-aside {
+  position: relative;
+  width: 248px;
+  flex-shrink: 0;
+  background: linear-gradient(180deg, var(--surface), var(--bg-sub));
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  padding: 18px 14px 14px;
+  overflow: hidden;
+  transition: background .35s var(--ease-2);
+}
+html.dark .remote-aside {
+  background: linear-gradient(180deg, rgba(8, 14, 21, .98), rgba(4, 8, 12, .99));
+}
+.remote-aside::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 36px 36px;
+  mask-image: linear-gradient(180deg, #000, transparent 78%);
+  -webkit-mask-image: linear-gradient(180deg, #000, transparent 78%);
+}
+.remote-aside::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: -1px;
+  width: 1px;
+  height: 36%;
+  background: linear-gradient(180deg, var(--violet), transparent);
+  opacity: .55;
+}
+.brand { position: relative; z-index: 1; display: flex; align-items: center; gap: 11px; padding: 2px 6px 20px; }
+.brand-text { display: flex; flex-direction: column; line-height: 1.35; min-width: 0; }
+.brand-text strong { font-family: var(--display); font-size: 13px; font-weight: 700; letter-spacing: .16em; white-space: nowrap; }
+.brand-text small { font-size: 9px; letter-spacing: .1em; color: var(--text-3); white-space: nowrap; }
+.logo {
+  position: relative;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  background: linear-gradient(135deg, var(--violet), var(--ice));
+  color: var(--on-remote);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 17px;
+  clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
+  box-shadow: 0 0 24px -6px color-mix(in srgb, var(--violet) 55%, transparent);
+}
+.nav-group { position: relative; z-index: 1; padding: 6px 8px; margin-bottom: 8px; color: var(--text-3); }
+.remote-nav { position: relative; z-index: 1; flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.nav-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 44px;
+  padding: 0 10px 0 16px;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--text-2);
+  font-family: var(--sans);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--dur-1) var(--ease-2), color var(--dur-1) var(--ease-2), border-color var(--dur-1) var(--ease-2);
+}
+.nav-rail {
+  position: absolute;
+  left: 4px;
+  top: 50%;
+  width: 2px;
+  height: 0;
+  border-radius: 2px;
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent);
+  transform: translateY(-50%);
+  transition: height var(--dur-2) var(--ease);
+}
+.nav-item:hover { background: var(--accent-soft); color: var(--text); border-color: var(--line); }
+.nav-item.active {
+  background: linear-gradient(90deg, var(--accent-soft), transparent);
+  border-color: var(--accent-line);
+  color: var(--accent);
+  font-weight: 600;
+}
+.nav-item.active .nav-rail { height: 20px; }
+.nav-icon { font-size: 16px; }
+.nav-title { flex: 1; }
+.nav-index { font-size: 9px; color: var(--text-3); opacity: .85; }
+.nav-item.active .nav-index { color: var(--accent); opacity: .7; }
+.aside-foot {
+  position: relative;
+  z-index: 1;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.aside-foot .status { display: flex; align-items: center; gap: 7px; font-size: 9.5px; color: var(--text-3); letter-spacing: .08em; }
+.aside-foot .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft), 0 0 10px var(--accent);
+  animation: hudPulse 2.4s ease-in-out infinite;
+}
+
+.remote-content { flex: 1; display: flex; flex-direction: column; min-width: 0; }
 
 .remote-top {
   position: sticky;
@@ -478,27 +648,20 @@ export default {
   background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--violet) 45%, transparent), transparent);
   opacity: .7;
 }
-.brand { display: flex; align-items: center; gap: 11px; }
-.logo {
-  width: 38px;
-  height: 38px;
-  border-radius: 4px;
-  background: linear-gradient(135deg, var(--violet), var(--ice));
-  color: var(--on-remote);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--display);
-  font-weight: 800;
-  font-size: 17px;
-  clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
-  box-shadow: 0 0 24px -6px color-mix(in srgb, var(--violet) 55%, transparent);
+.topbar-left { display: flex; flex-direction: column; gap: 2px; }
+.topbar-path { color: var(--violet); opacity: .85; letter-spacing: .18em; font-size: 9px; }
+.topbar-path::before { content: '// '; opacity: .5; }
+.page-title { font-family: var(--display); font-size: 20px; font-weight: 700; letter-spacing: -.04em; }
+.topbar-right { display: flex; align-items: center; gap: 12px; }
+.sys-status { display: flex; align-items: center; gap: 7px; font-size: 9px; letter-spacing: .12em; color: var(--text-3); }
+.sys-status .dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--violet);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--violet) 14%, transparent), 0 0 10px var(--violet);
+  animation: hudPulse 2.4s ease-in-out infinite;
 }
-.brand-text { display: flex; flex-direction: column; line-height: 1.35; }
-.brand-text strong { font-family: var(--display); font-size: 13px; font-weight: 700; letter-spacing: .16em; }
-.brand-text small { font-size: 9px; letter-spacing: .1em; color: var(--text-3); }
-
-.remote-user { display: flex; align-items: center; gap: 12px; }
 .remote-badge {
   font-size: 9px;
   letter-spacing: .14em;
@@ -521,21 +684,24 @@ export default {
   cursor: pointer;
   transition: all var(--dur-1) var(--ease-2);
 }
-.btn-ghost:hover { color: var(--danger); border-color: rgba(229, 72, 77, .4); background: rgba(229, 72, 77, .06); }
-.local-link { font-size: 11px; color: var(--text-3); text-decoration: none; }
-.local-link:hover { color: var(--accent); }
+.btn-ghost:hover { color: var(--danger); border-color: rgba(255, 61, 129, .45); background: rgba(255, 61, 129, .06); }
 
 .remote-main {
   flex: 1;
   min-height: 0;
-  width: 100%;
-  max-width: 1500px;
-  margin: 0 auto;
-  padding: 18px;
+  padding: 22px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.remote-main .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-shrink: 0; }
+.remote-main .page-head h2 { font-size: 24px; font-weight: 700; letter-spacing: -.04em; margin-bottom: 4px; }
+.remote-workspace {
+  flex: 1;
+  min-height: 0;
   display: grid;
   grid-template-columns: minmax(270px, 320px) minmax(0, 1fr);
   gap: 16px;
-  height: calc(100vh - 72px);
 }
 
 .panel {
@@ -688,11 +854,19 @@ export default {
 .dialog-body .u-hint { margin-top: 2px; }
 .dim { color: var(--text-3); }
 
+@media (max-width: 1100px) {
+  .remote-aside { width: 76px; padding: 18px 8px 14px; }
+  .brand-text, .nav-group, .nav-title, .nav-index, .aside-foot { display: none; }
+  .nav-item { justify-content: center; padding: 0; }
+  .brand { justify-content: center; padding-left: 0; padding-right: 0; }
+  .topbar-right .sys-status, .topbar-right .who { display: none; }
+  .remote-main { padding: 18px; }
+}
 @media (max-width: 900px) {
-  .remote-main { grid-template-columns: 1fr; height: auto; min-height: calc(100vh - 72px); }
+  .remote-workspace { grid-template-columns: 1fr; }
   .group-panel { max-height: 300px; }
   .chat-panel { min-height: 560px; }
-  .remote-user .local-link { display: none; }
   .message-item { max-width: 92%; }
+  .remote-top { padding: 0 18px; }
 }
 </style>
