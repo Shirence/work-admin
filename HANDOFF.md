@@ -279,7 +279,7 @@ com.example.workadmin
   批准前无法同步，批准后只能解密之后发给它的消息（旧消息需额外历史密钥授权）。
 - Vue 构建：`vue.config.js` 里给 libsignal 的 curve25519 wasm 包设置 `resolve.fallback.fs=false`。
 - 数据源切换：本地 `/chat` 页头有「本地 H2 / 远程 MySQL」切换；远程 `/remote-chat`
-  页头有「本地 H2 / 远程 MySQL」切换；侧栏也有「远程聊天」入口。
+  页头有「本地 H2 / 远程 MySQL」切换。远程聊天不出现在本地侧栏，只从远程登录进入。
   远程聊天需要独立远程账号登录，本地 token 与 remoteToken 互不覆盖。
 
 ---
@@ -318,7 +318,6 @@ Spring Boot
 /           → Layout.vue  redirect /dashboard
    ├─ dashboard → Dashboard.vue  meta:{title:'仪表盘', icon:'House', menu:true, roles:[admin,manager,viewer]}
    ├─ chat      → Chat.vue       meta:{title:'消息', icon:'ChatDotRound', menu:true, roles:[admin,manager,viewer]}
-   ├─ remote-chat-entry → redirect /remote-chat  meta:{title:'远程聊天', menu:true, roles:[all]}
    ├─ user      → User.vue       meta:{title:'用户管理', icon:'User', menu:true, roles:[admin,manager]}
    └─ remote    → RemoteChat.vue meta:{title:'远程观察', icon:'ChatDotRound', menu:true, roles:[admin]}
 
