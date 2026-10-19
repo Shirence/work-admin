@@ -5,17 +5,23 @@
         <h2>消息</h2>
         <p class="u-hint">端到端加密 · 每设备独立密钥 · 服务端只存密文</p>
       </div>
-      <div v-if="deviceState === 'active'" class="head-actions">
-        <span class="device-chip mono">DEVICE {{ localDevice.deviceId }}</span>
-        <el-button size="small" @click="openPrivate">
-          <el-icon class="btn-icon"><User /></el-icon>新私聊
-        </el-button>
-        <el-button size="small" @click="openGroup" :disabled="Boolean(groupPermission && !groupPermission.canCreateGroup)">
-          <el-icon class="btn-icon"><Plus /></el-icon>新建群
-        </el-button>
-        <el-button size="small" @click="openDevices">
-          <el-icon class="btn-icon"><ChatDotRound /></el-icon>设备
-        </el-button>
+      <div class="head-actions">
+        <div class="source-switch" role="group" aria-label="数据源">
+          <button type="button" class="source-btn active" disabled>本地 H2</button>
+          <button type="button" class="source-btn" @click="goRemoteChat">远程 MySQL</button>
+        </div>
+        <template v-if="deviceState === 'active'">
+          <span class="device-chip mono">DEVICE {{ localDevice.deviceId }}</span>
+          <el-button size="small" @click="openPrivate">
+            <el-icon class="btn-icon"><User /></el-icon>新私聊
+          </el-button>
+          <el-button size="small" @click="openGroup" :disabled="Boolean(groupPermission && !groupPermission.canCreateGroup)">
+            <el-icon class="btn-icon"><Plus /></el-icon>新建群
+          </el-button>
+          <el-button size="small" @click="openDevices">
+            <el-icon class="btn-icon"><ChatDotRound /></el-icon>设备
+          </el-button>
+        </template>
       </div>
     </header>
 
@@ -622,6 +628,14 @@ export default {
       this.privateVisible = true
     },
 
+    goRemoteChat() {
+      if (localStorage.getItem('remoteToken')) {
+        this.$router.push('/remote-chat')
+      } else {
+        this.$router.push('/remote-login')
+      }
+    },
+
     async submitPrivate() {
       const target = this.privateTarget.trim()
       if (!target) {
@@ -829,7 +843,33 @@ export default {
 .chat-page { height: calc(100vh - 120px); min-height: 560px; display: flex; flex-direction: column; gap: 16px; }
 .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-shrink: 0; }
 .page-head h2 { font-size: 22px; font-weight: 650; letter-spacing: -.02em; margin-bottom: 4px; }
-.head-actions { display: flex; align-items: center; gap: 8px; }
+.head-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.source-switch {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--bg-inset);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+}
+.source-btn {
+  border: 0;
+  background: transparent;
+  color: var(--text-3);
+  font-size: 11px;
+  padding: 5px 9px;
+  border-radius: 5px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.source-btn:hover:not(:disabled) { color: var(--text); }
+.source-btn.active {
+  color: var(--accent);
+  background: var(--surface);
+  box-shadow: var(--shadow-xs);
+  font-weight: 600;
+}
+.source-btn:disabled { cursor: default; }
 .btn-icon { margin-right: 3px; }
 .device-chip {
   font-size: 9.5px;

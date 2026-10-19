@@ -44,6 +44,13 @@ const routes = [
         meta: { title: '消息', icon: 'ChatDotRound', menu: true, roles: ['admin', 'manager', 'viewer'] }
       },
       {
+        // 侧栏入口：点击后进入独立的远程账号聊天页（无 remoteToken 时会跳到远程登录）
+        path: 'remote-chat-entry',
+        name: 'RemoteChatEntry',
+        redirect: '/remote-chat',
+        meta: { title: '远程聊天', icon: 'ChatDotRound', menu: true, roles: ['admin', 'manager', 'viewer'] }
+      },
+      {
         path: 'user',
         name: 'User',
         component: () => import('../views/User.vue'),
@@ -53,7 +60,7 @@ const routes = [
         path: 'remote',
         name: 'RemoteChat',
         component: () => import('../views/RemoteChat.vue'),
-        meta: { title: '远程群聊', icon: 'ChatDotRound', menu: true, roles: ['admin'] }
+        meta: { title: '远程观察', icon: 'ChatDotRound', menu: true, roles: ['admin'] }
       }
     ]
   }

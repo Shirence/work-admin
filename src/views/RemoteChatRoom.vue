@@ -15,8 +15,11 @@
           <strong>{{ displayName }}</strong>
           <small class="u-label">@{{ account }}</small>
         </div>
+        <div class="source-switch" role="group" aria-label="数据源">
+          <button type="button" class="source-btn" @click="goLocalChat">本地 H2</button>
+          <button type="button" class="source-btn active" disabled>远程 MySQL</button>
+        </div>
         <button class="btn-ghost mono" type="button" @click="handleLogout">EXIT</button>
-        <router-link class="local-link" to="/login">本地登录</router-link>
       </div>
     </header>
 
@@ -385,6 +388,14 @@ export default {
       this.$router.replace('/remote-login')
     },
 
+    goLocalChat() {
+      if (localStorage.getItem('token')) {
+        this.$router.push('/chat')
+      } else {
+        this.$router.push('/login')
+      }
+    },
+
     clearSession() {
       localStorage.removeItem('remoteToken')
       localStorage.removeItem('remoteUserInfo')
@@ -493,6 +504,32 @@ export default {
   transition: all var(--dur-1) var(--ease-2);
 }
 .btn-ghost:hover { color: var(--danger); border-color: rgba(229, 72, 77, .4); background: rgba(229, 72, 77, .06); }
+.source-switch {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  background: var(--bg-inset);
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+}
+.source-btn {
+  border: 0;
+  background: transparent;
+  color: var(--text-3);
+  font-size: 11px;
+  padding: 5px 9px;
+  border-radius: 5px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.source-btn:hover:not(:disabled) { color: var(--text); }
+.source-btn.active {
+  color: var(--violet);
+  background: var(--surface);
+  box-shadow: var(--shadow-xs);
+  font-weight: 600;
+}
+.source-btn:disabled { cursor: default; }
 .local-link { font-size: 11px; color: var(--text-3); text-decoration: none; }
 .local-link:hover { color: var(--accent); }
 

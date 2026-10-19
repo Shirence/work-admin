@@ -2,7 +2,7 @@
   <div class="page">
     <header class="page-head">
       <div>
-        <h2>远程群聊观察台</h2>
+        <h2>远程数据观察台</h2>
         <p class="u-hint">只读连接远程 MySQL，查看 stu 群聊库中的群组、成员与消息</p>
       </div>
       <div class="head-actions">

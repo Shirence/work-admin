@@ -125,6 +125,8 @@ $env:REMOTE_MYSQL_PASSWORD='******'
 | `/remote` | 管理员只读观察台（本地 admin 登录后访问） |
 | `/remote-login` | 远程 stu 账号登录 / 注册（独立登录态） |
 | `/remote-chat` | 远程群聊：群列表、加入、新建、历史、发消息 |
+| `/chat` | 本地 H2 E2EE 聊天；页头有「本地 H2 / 远程 MySQL」切换 |
+| 侧栏「远程聊天」 | 本地登录后的一键入口；无 remoteToken 时跳到远程登录 |
 
 远程登录态使用 `localStorage.remoteToken` / `remoteUserInfo`，与本地 `token` / `userInfo` 完全分离。
 本地登录页也提供「远程账号登录 →」入口。

@@ -204,6 +204,8 @@ java -jar target\work-admin-server-1.0.0.jar
 - 多设备：第二台设备注册后 PENDING，现有设备在「设备」对话框批准；
   新设备只能解密批准后发给它的消息。
 - 构建注意：`vue.config.js` 对 libsignal 的 curve25519 wasm 包设置 `resolve.fallback.fs=false`。
+- 数据源切换：本地 `/chat` 页头「本地 H2 / 远程 MySQL」，远程 `/remote-chat`
+  页头「本地 H2 / 远程 MySQL」；侧栏还有「远程聊天」入口。
 
 已实测：Node 端两个真实 libsignal 设备通过该后端完成
 `PreKeyWhisperMessage` 发送 → 对方解密 → `WhisperMessage` 回复 → 原设备解密。
