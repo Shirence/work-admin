@@ -123,7 +123,8 @@ $env:REMOTE_MYSQL_PASSWORD='******'
 | 路径 | 说明 |
 |---|---|
 | `/remote` | 管理员只读观察台（本地 admin 登录后访问） |
-| `/remote-login` | 远程 stu 账号登录 / 注册（独立登录态） |
+| `/remote-login` | 远程 stu 账号登录（独立登录态） |
+| `/remote-register` | 远程 stu 账号注册；注册成功自动登录 |
 | `/remote-chat` | 远程群聊：群列表、加入、新建、历史、发消息 |
 | `/chat` | 本地 H2 E2EE 聊天；页头有「本地 H2 / 远程 MySQL」切换 |
 | 侧栏「远程聊天」 | 本地登录后的一键入口；无 remoteToken 时跳到远程登录 |
@@ -163,7 +164,7 @@ remote-mysql-chat - Start completed.
 手工验证：
 
 1. 打开 `http://localhost:8080/login`，点击「远程账号登录 →」。
-2. 在登录/注册切换里选择「注册」，填写昵称、账号、密码；注册成功后自动进入远程群聊。
+2. 登录页右下角点击「注册账号 →」进入 `/remote-register`，填写昵称、账号、密码；注册成功后自动进入远程群聊。
 3. 也可以直接用远程 `demo.user` 中已有账号登录。
 4. 进入 `/remote-chat`，选择群、加入、发消息。
 5. 另开浏览器用另一个远程账号登录同一群，验证消息可见。

@@ -6,66 +6,39 @@
       <header class="card-head">
         <div class="logo">S</div>
         <div>
-          <h1>{{ mode === 'login' ? '远程群聊' : '注册远程账号' }}</h1>
-          <p class="u-label">{{ mode === 'login' ? 'STU Remote Chat' : 'STU Remote Register' }}</p>
+          <h1>远程群聊</h1>
+          <p class="u-label">STU Remote Chat</p>
         </div>
       </header>
 
-      <div class="mode-switch">
-        <button type="button" :class="{ active: mode === 'login' }" @click="switchMode('login')">登录</button>
-        <button type="button" :class="{ active: mode === 'register' }" @click="switchMode('register')">注册</button>
-      </div>
-
       <div class="remote-note">
         <span class="dot"></span>
-        <span v-if="mode === 'login'">
-          使用远程 MySQL <code>demo.user</code> 表中的账号登录，与本地 H2 账号体系相互独立。
-        </span>
-        <span v-else>
-          注册会直接写入远程 <code>user</code> 表并绑定 <code>member</code> 角色；注册成功自动登录。
-        </span>
+        <span>使用远程 MySQL <code>demo.user</code> 表中的账号登录，与本地 H2 账号体系相互独立。</span>
       </div>
 
       <el-form :model="form" size="large" class="form" @submit.prevent>
-        <div v-if="mode === 'register'" class="field">
-          <label class="u-label">昵称（可选）</label>
-          <el-input v-model="form.name" placeholder="显示名称，留空则使用账号" clearable @keyup.enter="handleSubmit" />
-        </div>
         <div class="field">
           <label class="u-label">远程账号</label>
-          <el-input v-model="form.account" placeholder="stu 数据库 user.account" clearable @keyup.enter="handleSubmit" />
+          <el-input v-model="form.account" placeholder="stu 数据库 user.account" clearable @keyup.enter="handleLogin" />
         </div>
         <div class="field">
           <label class="u-label">密码</label>
-          <el-input
-            v-model="form.password"
-            type="password"
-            :placeholder="mode === 'register' ? '6-32 位密码' : '远程账号密码'"
-            show-password
-            @keyup.enter="handleSubmit"
-          />
-        </div>
-        <div v-if="mode === 'register'" class="field">
-          <label class="u-label">确认密码</label>
-          <el-input v-model="form.confirmPassword" type="password" placeholder="再次输入密码" show-password @keyup.enter="handleSubmit" />
+          <el-input v-model="form.password" type="password" placeholder="远程账号密码" show-password @keyup.enter="handleLogin" />
         </div>
 
         <p v-if="errorText" class="error-text">{{ errorText }}</p>
 
-        <button class="primary mono" type="button" :disabled="loading" @click="handleSubmit">
-          {{ loading ? 'CONNECTING...' : (mode === 'login' ? 'REMOTE SIGN IN' : 'CREATE ACCOUNT') }}
+        <button class="primary mono" type="button" :disabled="loading" @click="handleLogin">
+          {{ loading ? 'CONNECTING...' : 'REMOTE SIGN IN' }}
         </button>
       </el-form>
 
       <footer class="card-foot">
-        <span v-if="mode === 'register'" class="u-label">注册后自动绑定 member 角色</span>
-        <button v-else type="button" class="link-btn" @click="switchMode('register')">
-          没有远程账号？注册一个 →
-        </button>
-        <button v-if="mode === 'register'" type="button" class="link-btn" @click="switchMode('login')">
-          ← 返回登录
-        </button>
-        <router-link v-else class="link" to="/login">← 返回本地登录</router-link>
+        <span class="u-label">远程 MySQL · 明文群聊库</span>
+        <span class="foot-links">
+          <router-link class="link" to="/remote-register">注册账号 →</router-link>
+          <router-link class="link muted" to="/login">← 返回本地登录</router-link>
+        </span>
       </footer>
     </div>
 
@@ -74,7 +47,7 @@
 </template>
 
 <script>
-import { remoteLogin, remoteRegister } from '../api/remoteChat'
+import { remoteLogin } from '../api/remoteChat'
 import ParticleField from '../components/ParticleField.vue'
 
 export default {
@@ -82,73 +55,31 @@ export default {
   components: { ParticleField },
   data() {
     return {
-      mode: 'login',
       loading: false,
       errorText: '',
       form: {
-        name: '',
         account: '',
-        password: '',
-        confirmPassword: ''
+        password: ''
       }
     }
   },
   methods: {
-    switchMode(mode) {
-      if (this.mode === mode) return
-      this.mode = mode
-      this.errorText = ''
-      this.form.confirmPassword = ''
-    },
-
-    validate() {
+    async handleLogin() {
       const account = this.form.account.trim()
-      if (!account) {
-        this.errorText = '请输入远程账号'
-        return false
+      if (!account || !this.form.password) {
+        this.errorText = '请输入远程账号和密码'
+        return
       }
-      if (!this.form.password) {
-        this.errorText = '请输入密码'
-        return false
-      }
-      if (this.mode === 'register') {
-        if (account.length < 2) {
-          this.errorText = '远程账号至少 2 个字符'
-          return false
-        }
-        if (this.form.password.length < 6 || this.form.password.length > 32) {
-          this.errorText = '密码长度必须为 6-32 个字符'
-          return false
-        }
-        if (this.form.password !== this.form.confirmPassword) {
-          this.errorText = '两次输入的密码不一致'
-          return false
-        }
-      }
-      return true
-    },
-
-    async handleSubmit() {
-      if (this.loading || !this.validate()) return
       this.loading = true
       this.errorText = ''
       try {
-        const account = this.form.account.trim()
-        const res = this.mode === 'register'
-          ? await remoteRegister({
-              name: this.form.name.trim() || undefined,
-              account,
-              password: this.form.password,
-              confirmPassword: this.form.confirmPassword
-            })
-          : await remoteLogin({ account, password: this.form.password })
-
+        const res = await remoteLogin({ account, password: this.form.password })
         localStorage.setItem('remoteToken', res.data.token)
         localStorage.setItem('remoteUserInfo', JSON.stringify(res.data.userInfo))
-        this.$message.success(res.msg || (this.mode === 'register' ? '远程账号注册成功' : '远程账号登录成功'))
+        this.$message.success(res.msg || '远程账号登录成功')
         this.$router.push('/remote-chat')
       } catch (e) {
-        this.errorText = e.message || (this.mode === 'register' ? '远程注册失败' : '远程登录失败')
+        this.errorText = e.message || '远程登录失败'
       } finally {
         this.loading = false
       }
@@ -172,8 +103,8 @@ export default {
 .card {
   position: relative;
   z-index: 1;
-  width: 440px;
-  padding: 30px 32px 22px;
+  width: 430px;
+  padding: 32px 32px 22px;
   background: rgba(255, 255, 255, .84);
   backdrop-filter: saturate(180%) blur(20px);
   -webkit-backdrop-filter: saturate(180%) blur(20px);
@@ -194,7 +125,7 @@ export default {
   pointer-events: none;
 }
 
-.card-head { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.card-head { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
 .logo {
   width: 40px;
   height: 40px;
@@ -208,34 +139,6 @@ export default {
   box-shadow: 0 8px 18px -6px rgba(124, 92, 255, .55);
 }
 .card-head h1 { font-size: 18px; font-weight: 650; letter-spacing: -.01em; margin-bottom: 3px; }
-
-.mode-switch {
-  display: flex;
-  gap: 4px;
-  padding: 3px;
-  margin-bottom: 14px;
-  background: var(--bg-inset);
-  border: 1px solid var(--line);
-  border-radius: var(--r-md);
-}
-.mode-switch button {
-  flex: 1;
-  border: 0;
-  background: transparent;
-  color: var(--text-3);
-  font-size: 12px;
-  padding: 7px 10px;
-  border-radius: 7px;
-  cursor: pointer;
-  transition: all var(--dur-1) var(--ease-2);
-}
-.mode-switch button:hover { color: var(--text); }
-.mode-switch button.active {
-  color: var(--violet);
-  background: var(--surface);
-  box-shadow: var(--shadow-xs);
-  font-weight: 600;
-}
 
 .remote-note {
   display: flex;
@@ -261,7 +164,7 @@ export default {
   box-shadow: 0 0 0 3px rgba(124, 92, 255, .14);
 }
 
-.form { display: flex; flex-direction: column; gap: 14px; }
+.form { display: flex; flex-direction: column; gap: 16px; }
 .field { display: flex; flex-direction: column; gap: 7px; }
 .field :deep(.el-input__wrapper) {
   border-radius: var(--r-md);
@@ -275,7 +178,7 @@ export default {
 
 .primary {
   height: 44px;
-  margin-top: 4px;
+  margin-top: 6px;
   border: none;
   border-radius: var(--r-md);
   background: var(--text);
@@ -292,24 +195,17 @@ export default {
 .primary:disabled { opacity: .55; cursor: not-allowed; }
 
 .card-foot {
-  margin-top: 20px;
-  padding-top: 15px;
+  margin-top: 22px;
+  padding-top: 16px;
   border-top: 1px solid var(--line);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
 }
+.foot-links { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
 .link { font-size: 12px; color: var(--violet); text-decoration: none; white-space: nowrap; }
 .link:hover { text-decoration: underline; }
-.link-btn {
-  border: 0;
-  background: transparent;
-  padding: 0;
-  font-size: 12px;
-  color: var(--accent);
-  cursor: pointer;
-}
-.link-btn:hover { text-decoration: underline; }
+.link.muted { color: var(--text-3); }
 .copyright { position: relative; z-index: 1; margin-top: 22px; }
 </style>

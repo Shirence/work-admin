@@ -134,7 +134,8 @@ work-admin/
 │   │   ├── Chat.vue            # 本地 E2EE 消息页（设备初始化/会话/收发）
 │   │   ├── User.vue
 │   │   ├── RemoteChat.vue      # 远程 MySQL 群聊/消息观察台（admin）
-│   │   ├── RemoteLogin.vue     # 远程 stu 账号登录 / 注册
+│   │   ├── RemoteLogin.vue     # 远程 stu 账号登录
+│   │   ├── RemoteRegister.vue  # 远程 stu 账号注册
 │   │   └── RemoteChatRoom.vue  # 远程群聊（加入/建群/收发消息）
 │   ├── App.vue                 # 设计系统 tokens + 全局样式（关键！）
 │   └── main.js                 # 入口：注册图标 / v-reveal / Mock 开关
@@ -316,7 +317,8 @@ Spring Boot
    ├─ user      → User.vue       meta:{title:'用户管理', icon:'User', menu:true, roles:[admin,manager]}
    └─ remote    → RemoteChat.vue meta:{title:'远程观察', icon:'ChatDotRound', menu:true, roles:[admin]}
 
-/remote-login → RemoteLogin.vue    （公开；远程 stu 账号登录 / 注册）
+/remote-login → RemoteLogin.vue    （公开；远程 stu 账号登录）
+/remote-register → RemoteRegister.vue（公开；远程 stu 账号注册）
 /remote-chat  → RemoteChatRoom.vue （meta.remoteAuth；独立 remoteToken，不依赖本地 token）
 ```
 

@@ -21,6 +21,11 @@ const routes = [
     component: () => import('../views/RemoteLogin.vue')
   },
   {
+    path: '/remote-register',
+    name: 'RemoteRegister',
+    component: () => import('../views/RemoteRegister.vue')
+  },
+  {
     path: '/remote-chat',
     name: 'RemoteChatRoom',
     component: () => import('../views/RemoteChatRoom.vue'),
@@ -76,10 +81,10 @@ const router = createRouter({
 router.beforeEach(to => {
   const token = store.state.token
 
-  // 白名单：登录、注册、远程账号登录页无需本地 token
-  const whiteList = ['/login', '/register', '/remote-login']
+  // 白名单：登录、注册、远程账号登录/注册页无需本地 token
+  const whiteList = ['/login', '/register', '/remote-login', '/remote-register']
   if (whiteList.includes(to.path)) {
-    if (to.path === '/remote-login') return true
+    if (to.path === '/remote-login' || to.path === '/remote-register') return true
     return token ? '/dashboard' : true
   }
 
