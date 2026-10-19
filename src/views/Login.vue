@@ -27,7 +27,10 @@
 
       <footer class="card-foot">
         <span class="u-label">演示账号 admin / manager / viewer · 密码 123456</span>
-        <router-link class="link" to="/register">注册账号 →</router-link>
+        <span class="foot-links">
+          <router-link class="link" to="/register">注册账号 →</router-link>
+          <router-link class="link remote-link" to="/remote-login">远程账号登录 →</router-link>
+        </span>
       </footer>
     </div>
 
@@ -161,8 +164,10 @@ export default {
   justify-content: space-between;
   gap: 10px;
 }
-.link { font-size: 12px; color: var(--accent); text-decoration: none; }
+.link { font-size: 12px; color: var(--accent); text-decoration: none; white-space: nowrap; }
 .link:hover { text-decoration: underline; }
+.foot-links { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; }
+.remote-link { color: var(--violet); }
 
 .copyright { position: relative; z-index: 1; margin-top: 22px; }
 </style>

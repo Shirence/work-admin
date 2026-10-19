@@ -8,8 +8,14 @@ server:
 spring:
   application:
     name: work-admin-server
+  config:
+    # 远程 MySQL 凭据不提交到 git：放在 server/application-local.yml
+    import:
+      - optional:file:./application-local.yml
+      - optional:file:./server/application-local.yml
   datasource:
-    url: jdbc:h2:mem:workadmin;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    # 文件持久化：数据保存在 server/data/workadmin.mv.db，重启后端不再复位
+    url: jdbc:h2:file:./data/workadmin;DB_CLOSE_ON_EXIT=FALSE;DB_CLOSE_DELAY=-1
     driver-class-name: org.h2.Driver
     username: sa
     password: ""
@@ -22,6 +28,17 @@ spring:
       ddl-auto: update
     open-in-view: false
     show-sql: false
+
+# 远程 MySQL 只读观察台（主库仍然是 H2）
+# 默认关闭；server/application-local.yml 或环境变量启用。
+workadmin:
+  remote-mysql:
+    enabled: ${REMOTE_MYSQL_ENABLED:false}
+    url: ${REMOTE_MYSQL_URL:}
+    username: ${REMOTE_MYSQL_USERNAME:}
+    password: ${REMOTE_MYSQL_PASSWORD:}
+    query-timeout-seconds: 10
+    max-rows: 500
 
 logging:
   level:

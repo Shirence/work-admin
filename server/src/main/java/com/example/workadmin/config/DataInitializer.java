@@ -2,8 +2,10 @@ package com.example.workadmin.config;
 
 import com.example.workadmin.common.RolePermissions;
 import com.example.workadmin.entity.Account;
+import com.example.workadmin.entity.ChatGroupPolicy;
 import com.example.workadmin.entity.User;
 import com.example.workadmin.repository.AccountRepository;
+import com.example.workadmin.repository.ChatGroupPolicyRepository;
 import com.example.workadmin.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
@@ -15,6 +17,7 @@ import java.time.LocalDateTime;
 /**
  * 初始化演示数据：业务用户（张三、李四）+ 登录账号（admin / manager / viewer）。
  * 密码统一 123456，存 BCrypt 哈希。
+ * 同时保证聊天全局建群策略存在（默认 AUTO_ALLOW）。
  */
 @Configuration
 public class DataInitializer {
@@ -22,6 +25,7 @@ public class DataInitializer {
     @Bean
     CommandLineRunner initData(UserRepository userRepository,
                                AccountRepository accountRepository,
+                               ChatGroupPolicyRepository chatGroupPolicyRepository,
                                PasswordEncoder passwordEncoder) {
         return args -> {
             if (userRepository.count() == 0) {
@@ -32,6 +36,13 @@ public class DataInitializer {
                 accountRepository.save(account("admin", "admin@work-admin.local", "admin", passwordEncoder));
                 accountRepository.save(account("manager", "manager@work-admin.local", "manager", passwordEncoder));
                 accountRepository.save(account("viewer", "viewer@work-admin.local", "viewer", passwordEncoder));
+            }
+            if (chatGroupPolicyRepository.count() == 0) {
+                ChatGroupPolicy policy = new ChatGroupPolicy();
+                policy.setMode("AUTO_ALLOW");
+                policy.setUpdatedBy("system");
+                policy.setUpdatedAt(LocalDateTime.now());
+                chatGroupPolicyRepository.save(policy);
             }
         };
     }

@@ -63,10 +63,12 @@ npm run serve
 | 路由 | Vue Router 4，**history 模式** |
 | 请求 | Axios（封装在 `src/api/request.js`） |
 | 图表 | ECharts 5 |
+| 端到端加密 | `@privacyresearch/libsignal-protocol-typescript`（X3DH + Double Ratchet，浏览器本地密钥） |
 | Mock | MockJS（可通过开关关闭） |
 | 构建 | Vue CLI 5（webpack 5）+ Babel |
 | 后端 | Spring Boot 3.5.16 + Spring Web + Spring Data JPA + Bean Validation |
-| 数据库 | H2 内存库（`jdbc:h2:mem:workadmin`） |
+| 数据库 | H2 文件库（`jdbc:h2:file:./data/workadmin`，文件在 `server/data/workadmin.mv.db`） |
+| 远程 MySQL | MySQL Connector/J + 只读观察池 + 可写聊天池；支持远程 stu 账号登录、加入群聊、收发消息 |
 | 密码 | `spring-security-crypto` 的 BCrypt（**不引完整 Spring Security**） |
 | JDK / Maven | JDK 17+（本机用 jdk-22）；Maven 3.9.16 |
 
@@ -103,7 +105,10 @@ work-admin/
 │   ├── api/
 │   │   ├── request.js          # axios 实例 + 请求拦截器(token) + 响应拦截器(拆包/401)
 │   │   ├── auth.js             # login / register / logout / getMe
-│   │   └── user.js             # getUserList / addUser / editUser / delUser
+│   │   ├── user.js             # getUserList / addUser / editUser / delUser
+│   │   ├── remote.js           # 远程 MySQL 观察台（仅 admin）
+│   │   ├── remoteChat.js       # 远程 stu 账号登录 + 远程群聊
+│   │   └── chat.js             # 本地 E2EE 聊天 API（设备/会话/消息）
 │   ├── components/
 │   │   ├── UserFormDialog.vue  # 用户弹窗表单（自定义 v-model）
 │   │   ├── AvatarUpload.vue    # 本地头像预览（Blob URL + 释放）
@@ -117,15 +122,26 @@ work-admin/
 │   │   └── index.js            # 路由表 + meta + 全局守卫 + ChunkLoadError 兜底
 │   ├── store/
 │   │   └── index.js            # Vuex：token / userInfo，localStorage 双写
+│   ├── utils/
+│   │   ├── bytes.js            # ArrayBuffer/Base64
+│   │   ├── signalStore.js      # libsignal StorageType 的 localStorage 实现
+│   │   └── chatCrypto.js       # 设备密钥生成、会话建立、逐设备加解密
 │   ├── views/
 │   │   ├── Layout.vue          # 中台骨架（玻璃顶栏 + 侧栏 + 内容区）
 │   │   ├── Login.vue
 │   │   ├── Register.vue
 │   │   ├── Dashboard.vue       # Bento 栅格 + ECharts + 实时用户统计
-│   │   └── User.vue
+│   │   ├── Chat.vue            # 本地 E2EE 消息页（设备初始化/会话/收发）
+│   │   ├── User.vue
+│   │   ├── RemoteChat.vue      # 远程 MySQL 群聊/消息观察台（admin）
+│   │   ├── RemoteLogin.vue     # 远程 stu 账号登录 / 注册
+│   │   └── RemoteChatRoom.vue  # 远程群聊（加入/建群/收发消息）
 │   ├── App.vue                 # 设计系统 tokens + 全局样式（关键！）
 │   └── main.js                 # 入口：注册图标 / v-reveal / Mock 开关
 ├── server/                     # 见第 5 节
+│   ├── CHAT_API.md             # 聊天后端接口
+│   ├── REMOTE_MYSQL.md         # 远程 MySQL 只读观察台
+│   └── application-local.yml   # 远程库凭据（已 gitignore，运行时加载）
 ├── deploy/nginx.conf           # history 回退 + /api 反代
 ├── .env.development            # VUE_APP_USE_MOCK=false
 ├── .env.production             # VUE_APP_USE_MOCK=false
@@ -209,8 +225,10 @@ com.example.workadmin
 
 ### 5.5 数据库
 
-- H2 **内存库**，重启后端数据复位
-- `jdbc:h2:mem:workadmin`，用户 `sa`，密码空
+- H2 **文件库**，重启后端数据保留
+- `jdbc:h2:file:./data/workadmin;DB_CLOSE_ON_EXIT=FALSE;DB_CLOSE_DELAY=-1`
+- 数据库文件：`server/data/workadmin.mv.db`（已加入 `.gitignore`）
+- 用户 `sa`，密码空
 - H2 控制台：<http://localhost:8081/h2-console>
 - `sys_user` 种子：张三(admin)、李四(user)
 - `sys_account` 种子：admin / manager / viewer，密码 BCrypt("123456")
@@ -229,8 +247,31 @@ com.example.workadmin
 - ✅ 密码 BCrypt 哈希，库里无明文
 - ❌ token 存内存、无过期/刷新机制
 - ❌ 无验证码、无邮箱激活、无找回密码
-- ❌ **没有接口级角色鉴权**（只校验「有没有登录」），前端 `v-if` 按钮权限只是 UI
+- ❌ **没有接口级角色鉴权**（只校验「有没有登录」；聊天管理员接口除外），前端 `v-if` 按钮权限只是 UI
 - ❌ 无 HTTPS / 限流 / 审计日志
+
+### 5.8 聊天模块（E2EE / 多设备）
+
+聊天后端已按以下模型实现，完整接口见 [`server/CHAT_API.md`](server/CHAT_API.md)：
+
+- 设备：`chat_device`、`chat_one_time_pre_key`、`chat_device_link`、`chat_device_grant`
+- 会话：`chat_conversation`（`version` 群版本号）、`chat_member`、`chat_read_cursor`
+- 消息：`chat_message`（`clientMessageId` 幂等 + 服务端 `serverSeq` 定序）、`chat_envelope`（逐设备密文）
+- 建群权限：`chat_group_policy`（全局）+ `chat_account_group_permission`（账号覆盖）
+- 服务端只存密文；新设备 PENDING，必须由已有 ACTIVE 设备授权后才能同步
+- 集成测试：`server/src/test/java/com/example/workadmin/ChatFlowIntegrationTest.java`（12 项）
+- 远程观察台：H2 主库之外额外挂一个**只读 MySQL**，管理员可在 `/remote`
+  查看 `stu` 库的群组、成员、消息；配置见 `server/REMOTE_MYSQL.md`。远程不可用不影响 H2。
+- 远程账号群聊：`/remote-login` 用远程 `demo.user` 账号登录或注册（独立 `remoteToken`），
+  `/remote-chat` 可加入群聊、读历史、发消息；写入远程 `chat_group/chat_member/chat_message`。
+  远程 token 只能访问 `/api/remote-auth/**` 和 `/api/remote-chat/**`，不能调用本地 H2 接口。
+  远程注册直接写 `user` 表并绑定 `member` 角色，不允许指定角色。
+- 本地 E2EE 消息页：`/chat` 首次进入生成 identity key / signed pre-key / one-time pre-key，
+  私钥只存浏览器 `localStorage`（按 clientDeviceKey 隔离）；发送时对每个目标设备
+  `SessionCipher.encrypt`，每条消息生成多个 `chat_envelope`。
+- 新设备：第二台设备注册后为 PENDING，现有设备在「设备」对话框批准后激活；
+  批准前无法同步，批准后只能解密之后发给它的消息（旧消息需额外历史密钥授权）。
+- Vue 构建：`vue.config.js` 里给 libsignal 的 curve25519 wasm 包设置 `resolve.fallback.fs=false`。
 
 ---
 
@@ -267,7 +308,12 @@ Spring Boot
 /register   → Register.vue         （白名单）
 /           → Layout.vue  redirect /dashboard
    ├─ dashboard → Dashboard.vue  meta:{title:'仪表盘', icon:'House', menu:true, roles:[admin,manager,viewer]}
-   └─ user      → User.vue       meta:{title:'用户管理', icon:'User', menu:true, roles:[admin,manager]}
+   ├─ chat      → Chat.vue       meta:{title:'消息', icon:'ChatDotRound', menu:true, roles:[admin,manager,viewer]}
+   ├─ user      → User.vue       meta:{title:'用户管理', icon:'User', menu:true, roles:[admin,manager]}
+   └─ remote    → RemoteChat.vue meta:{title:'远程群聊', icon:'ChatDotRound', menu:true, roles:[admin]}
+
+/remote-login → RemoteLogin.vue    （公开；远程 stu 账号登录 / 注册）
+/remote-chat  → RemoteChatRoom.vue （meta.remoteAuth；独立 remoteToken，不依赖本地 token）
 ```
 
 - **history 模式**（`createWebHistory(process.env.BASE_URL)`），生产必须配 SPA 回退
@@ -400,9 +446,11 @@ npm run build:mock          # 离线演示包（内置 Mock）
 
 # ---------- 后端 ----------
 cd E:\my-project\work-admin\server
-mvn spring-boot:run                     # 开发启动
+mvn spring-boot:run                     # 开发启动（会加载 server/application-local.yml）
 mvn -DskipTests package                 # 打包 → target/work-admin-server-1.0.0.jar
 java -jar target\work-admin-server-1.0.0.jar
+# 远程 MySQL 凭据放在 server/application-local.yml（已 gitignore）
+# 不配置时远程观察台返回 503，H2 业务照常运行
 
 # ---------- 部署 ----------
 npx serve -s dist           # 本地预览 dist（-s 必须有，history 模式需要回退）
@@ -418,8 +466,11 @@ npx serve -s dist           # 本地预览 dist（-s 必须有，history 模式�
 | **F12 → Network → Fetch/XHR** | 能看到 `POST /api/login`、`GET /api/user/list` 等真实请求（Mock 模式下看不到） |
 | **`localStorage.token`** | 真实后端：32 位十六进制；Mock：`admin-demo-token` 这种 |
 | **停掉后端再操作** | 前端报「获取列表失败」/ 500，说明确实依赖后端 |
-| **H2 控制台** | `http://localhost:8081/h2-console` 能看到 `sys_user` / `sys_account` 表 |
-| **重启后端** | 数据回到张三、李四（内存库） |
+| **H2 控制台** | `http://localhost:8081/h2-console` 能看到 `sys_user` / `sys_account` 及聊天表 |
+| **重启后端** | H2 文件库数据保留（不再是内存库） |
+| **远程观察台** | admin 登录后打开 `/remote`，能看到远程库的群组/消息即说明 MySQL 旁路连接生效 |
+| **远程账号群聊** | 登录页点「远程账号登录 →」，可登录或注册远程账号；进入 `/remote-chat` 后能加入群并发消息即说明远程读写链路生效 |
+| **本地 E2EE 消息** | 登录后进入 `/chat`，首次会生成设备密钥；发送消息后 Network 里 `/api/chat/messages` 的 envelopes 是密文，接收端能显示明文即说明 libsignal 链路生效 |
 | **curl 直连** | `Invoke-RestMethod http://localhost:8081/api/health` |
 
 > 之前实测：登录后 Network 出现

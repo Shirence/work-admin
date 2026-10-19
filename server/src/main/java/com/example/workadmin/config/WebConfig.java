@@ -18,8 +18,9 @@ public class WebConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(authInterceptor)
                 .addPathPatterns("/api/**")
-                // 登录、注册、探活不需要 token
-                .excludePathPatterns("/api/login", "/api/register", "/api/health");
+                // 登录、注册、探活、远程账号登录/注册不需要 token
+                .excludePathPatterns("/api/login", "/api/register", "/api/health",
+                        "/api/remote-auth/login", "/api/remote-auth/register");
     }
 
     @Override

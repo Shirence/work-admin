@@ -11,5 +11,13 @@ pnpm-debug.log*
 # 后端（Spring Boot）构建产物
 server/target/
 
+# 后端本地 H2 文件库（保留目录，不提交数据）
+server/data/*.mv.db
+server/data/*.trace.db
+server/data/*.lock.db
+
+# 本地私密配置（远程 MySQL 凭据等）
+server/application-local.yml
+
 # 界面截图（本地预览用）
 screenshots/

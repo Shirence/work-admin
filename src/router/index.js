@@ -16,6 +16,17 @@ const routes = [
     component: () => import('../views/Register.vue')
   },
   {
+    path: '/remote-login',
+    name: 'RemoteLogin',
+    component: () => import('../views/RemoteLogin.vue')
+  },
+  {
+    path: '/remote-chat',
+    name: 'RemoteChatRoom',
+    component: () => import('../views/RemoteChatRoom.vue'),
+    meta: { remoteAuth: true }
+  },
+  {
     path: '/',
     component: Layout,
     redirect: '/dashboard',
@@ -27,10 +38,22 @@ const routes = [
         meta: { title: '仪表盘', icon: 'House', menu: true, roles: ['admin', 'manager', 'viewer'] }
       },
       {
+        path: 'chat',
+        name: 'Chat',
+        component: () => import('../views/Chat.vue'),
+        meta: { title: '消息', icon: 'ChatDotRound', menu: true, roles: ['admin', 'manager', 'viewer'] }
+      },
+      {
         path: 'user',
         name: 'User',
         component: () => import('../views/User.vue'),
         meta: { title: '用户管理', icon: 'User', menu: true, roles: ['admin', 'manager'] }
+      },
+      {
+        path: 'remote',
+        name: 'RemoteChat',
+        component: () => import('../views/RemoteChat.vue'),
+        meta: { title: '远程群聊', icon: 'ChatDotRound', menu: true, roles: ['admin'] }
       }
     ]
   }
@@ -46,9 +69,17 @@ const router = createRouter({
 router.beforeEach(to => {
   const token = store.state.token
 
-  // 白名单：登录、注册页无需 token；已登录则直接去仪表盘
-  const whiteList = ['/login', '/register']
-  if (whiteList.includes(to.path)) return token ? '/dashboard' : true
+  // 白名单：登录、注册、远程账号登录页无需本地 token
+  const whiteList = ['/login', '/register', '/remote-login']
+  if (whiteList.includes(to.path)) {
+    if (to.path === '/remote-login') return true
+    return token ? '/dashboard' : true
+  }
+
+  // 远程 stu 账号页面使用独立的 remoteToken，不依赖本地 H2 登录态
+  if (to.meta.remoteAuth) {
+    return localStorage.getItem('remoteToken') ? true : '/remote-login'
+  }
 
   // 未登录：一律去登录页
   if (!token) return '/login'

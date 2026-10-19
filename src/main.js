@@ -16,7 +16,9 @@ import {
   Bell,
   SwitchButton,
   Menu,
-  DataLine
+  DataLine,
+  ChatDotRound,
+  WarningFilled
 } from '@element-plus/icons-vue'
 import reveal from './directives/reveal'
 
@@ -42,7 +44,9 @@ const icons = {
   Bell,
   SwitchButton,
   Menu,
-  DataLine
+  DataLine,
+  ChatDotRound,
+  WarningFilled
 }
 Object.keys(icons).forEach(name => app.component(name, icons[name]))
 
