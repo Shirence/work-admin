@@ -43,12 +43,13 @@ export default {
     },
     build() {
       const count = Math.min(58, Math.round((this.w * this.h) / 26000))
-      this.dots = Array.from({ length: count }, () => ({
+      this.dots = Array.from({ length: count }, (_, i) => ({
         x: Math.random() * this.w,
         y: Math.random() * this.h,
         vx: (Math.random() - 0.5) * 0.14,
         vy: (Math.random() - 0.5) * 0.14,
-        r: Math.random() * 1.6 + 0.7
+        r: Math.random() * 1.6 + 0.7,
+        magenta: i % 9 === 0
       }))
     },
     loop() {
@@ -73,7 +74,7 @@ export default {
           const dy = dots[i].y - dots[j].y
           const dist = Math.sqrt(dx * dx + dy * dy)
           if (dist < 132) {
-            ctx.strokeStyle = 'rgba(10,132,255,' + (0.055 * (1 - dist / 132)).toFixed(3) + ')'
+            ctx.strokeStyle = 'rgba(94,242,214,' + (0.07 * (1 - dist / 132)).toFixed(3) + ')'
             ctx.lineWidth = 1
             ctx.beginPath()
             ctx.moveTo(dots[i].x, dots[i].y)
@@ -83,7 +84,7 @@ export default {
         }
       }
       dots.forEach(d => {
-        ctx.fillStyle = 'rgba(10,132,255,.16)'
+        ctx.fillStyle = d.magenta ? 'rgba(255,61,129,.30)' : 'rgba(94,242,214,.22)'
         ctx.beginPath()
         ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2)
         ctx.fill()

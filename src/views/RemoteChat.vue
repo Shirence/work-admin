@@ -410,7 +410,7 @@ export default {
   flex-direction: column;
   gap: 4px;
   padding: 16px 18px;
-  background: var(--surface);
+  background: var(--panel);
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
   box-shadow: var(--shadow-xs);
@@ -419,12 +419,13 @@ export default {
 .metric::after {
   content: '';
   position: absolute;
-  right: -18px;
-  top: -22px;
-  width: 64px;
-  height: 64px;
+  right: -12px;
+  top: -16px;
+  width: 46px;
+  height: 46px;
   border-radius: 50%;
   background: var(--accent-soft);
+  opacity: .7;
 }
 .metric strong { font-size: 28px; line-height: 1.1; letter-spacing: -.03em; }
 .metric small { font-size: 11px; color: var(--text-3); }
@@ -452,7 +453,7 @@ export default {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  background: var(--surface);
+  background: var(--panel);
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
   box-shadow: var(--shadow-xs);
@@ -509,7 +510,7 @@ export default {
   display: flex; align-items: center; justify-content: center;
   font-size: 13px; font-weight: 650;
 }
-.group-item.active .group-avatar { background: var(--accent); color: #fff; }
+.group-item.active .group-avatar { background: var(--accent); color: var(--on-accent); }
 .group-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
 .group-title { display: flex; align-items: center; gap: 7px; min-width: 0; }
 .group-title strong { font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

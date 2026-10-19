@@ -1,6 +1,7 @@
 <template>
   <div class="auth mesh noise">
     <ParticleField class="bg-fx" />
+    <ThemeToggle class="auth-theme" />
 
     <div class="card reveal is-visible">
       <header class="card-head">
@@ -54,10 +55,11 @@
 <script>
 import { remoteRegister } from '../api/remoteChat'
 import ParticleField from '../components/ParticleField.vue'
+import ThemeToggle from '../components/ThemeToggle.vue'
 
 export default {
   name: 'RemoteRegister',
-  components: { ParticleField },
+  components: { ParticleField, ThemeToggle },
   data() {
     return {
       loading: false,
@@ -131,6 +133,7 @@ export default {
   justify-content: center;
   overflow: hidden;
 }
+.auth-theme { position: absolute; top: 24px; right: 24px; z-index: 3; }
 .bg-fx { z-index: 0; }
 
 .card {
@@ -138,20 +141,20 @@ export default {
   z-index: 1;
   width: 440px;
   padding: 30px 32px 22px;
-  background: rgba(255, 255, 255, .84);
-  backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-  border: 1px solid rgba(255, 255, 255, .9);
-  border-radius: 18px;
+  background: var(--remote-card);
+  backdrop-filter: saturate(180%) blur(24px);
+  -webkit-backdrop-filter: saturate(180%) blur(24px);
+  border: 1px solid var(--remote-border);
+  border-radius: 6px;
   box-shadow: var(--shadow-lg);
 }
 .card::before {
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: 18px;
+  border-radius: 6px;
   padding: 1px;
-  background: linear-gradient(150deg, rgba(124, 92, 255, .45), rgba(10, 132, 255, .18), transparent 60%);
+  background: linear-gradient(150deg, rgba(255, 61, 129, .55), rgba(88, 166, 255, .20), transparent 45%, rgba(94, 242, 214, .25));
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
@@ -162,16 +165,18 @@ export default {
 .logo {
   width: 40px;
   height: 40px;
-  border-radius: 11px;
-  background: linear-gradient(150deg, var(--violet), var(--accent));
-  color: #fff;
-  font-weight: 700;
+  border-radius: 4px;
+  background: linear-gradient(135deg, var(--violet), var(--ice));
+  color: var(--on-remote);
+  font-family: var(--display);
+  font-weight: 800;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8px 18px -6px rgba(124, 92, 255, .55);
+  clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
+  box-shadow: 0 0 28px -6px rgba(255, 61, 129, .6);
 }
-.card-head h1 { font-size: 18px; font-weight: 650; letter-spacing: -.01em; margin-bottom: 3px; }
+.card-head h1 { font-family: var(--display); font-size: 20px; font-weight: 700; letter-spacing: -.04em; margin-bottom: 3px; }
 
 .remote-note {
   display: flex;
@@ -194,7 +199,7 @@ export default {
   border-radius: 50%;
   flex-shrink: 0;
   background: var(--violet);
-  box-shadow: 0 0 0 3px rgba(124, 92, 255, .14);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--violet) 16%, transparent);
 }
 
 .form { display: flex; flex-direction: column; gap: 14px; }
@@ -205,7 +210,7 @@ export default {
   transition: box-shadow var(--dur-1) var(--ease-2);
 }
 .field :deep(.el-input__wrapper:hover) { box-shadow: 0 0 0 1px var(--line-3) inset; }
-.field :deep(.el-input__wrapper.is-focus) { box-shadow: 0 0 0 1px var(--violet) inset, 0 0 0 3px rgba(124, 92, 255, .10); }
+.field :deep(.el-input__wrapper.is-focus) { box-shadow: 0 0 0 1px var(--violet) inset, 0 0 0 3px rgba(255, 61, 129, .10); }
 
 .error-text { color: var(--danger); font-size: 11.5px; margin-top: -2px; }
 
@@ -213,17 +218,17 @@ export default {
   height: 44px;
   margin-top: 4px;
   border: none;
-  border-radius: var(--r-md);
-  background: var(--text);
-  color: #fff;
+  border-radius: 3px;
+  background: linear-gradient(135deg, var(--violet), #ff7a59);
+  color: var(--on-remote);
   font-size: 12.5px;
-  font-weight: 600;
-  letter-spacing: .1em;
+  font-weight: 700;
+  letter-spacing: .14em;
   cursor: pointer;
   transition: transform var(--dur-1) var(--ease), box-shadow var(--dur-2) var(--ease), background var(--dur-1);
-  box-shadow: 0 1px 2px rgba(13, 21, 32, .12);
+  box-shadow: 0 0 28px -8px rgba(255, 61, 129, .7);
 }
-.primary:hover:not(:disabled) { background: #16202c; box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.primary:hover:not(:disabled) { background: linear-gradient(135deg, #ff6b9e, #ff9a6f); box-shadow: 0 0 36px -6px rgba(255, 61, 129, .85); transform: translateY(-1px); }
 .primary:active:not(:disabled) { transform: translateY(0) scale(.995); }
 .primary:disabled { opacity: .55; cursor: not-allowed; }
 

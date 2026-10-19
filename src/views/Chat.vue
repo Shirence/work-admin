@@ -882,7 +882,7 @@ export default {
 }
 
 .panel {
-  background: var(--surface);
+  background: var(--panel);
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
   box-shadow: var(--shadow-xs);
@@ -966,7 +966,7 @@ export default {
   display: flex; align-items: center; justify-content: center;
   font-size: 12px; font-weight: 650;
 }
-.conv-item.active .conv-avatar { background: var(--accent); color: #fff; }
+.conv-item.active .conv-avatar { background: var(--accent); color: var(--on-accent); }
 .conv-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
 .conv-title { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .conv-title strong { font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -978,7 +978,7 @@ export default {
   padding: 0 5px;
   border-radius: 999px;
   background: var(--danger);
-  color: #fff;
+  color: var(--on-accent);
   font-size: 9.5px;
   display: flex;
   align-items: center;

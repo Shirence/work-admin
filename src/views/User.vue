@@ -50,7 +50,6 @@
         v-loading="loading"
         :data="tableData"
         class="table"
-        :header-cell-style="{ background: '#fafbfc', color: '#98a2ae', fontWeight: '600', fontSize: '11px', letterSpacing: '.08em', textTransform: 'uppercase' }"
         @selection-change="handleSelectionChange"
       >
         <el-table-column type="selection" width="46" />
@@ -236,7 +235,7 @@ export default {
 .page-head h2 { font-size: 22px; font-weight: 650; letter-spacing: -.02em; margin-bottom: 4px; }
 
 .panel {
-  background: var(--surface);
+  background: var(--panel);
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
   box-shadow: var(--shadow-xs);

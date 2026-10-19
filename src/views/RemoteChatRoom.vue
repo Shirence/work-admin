@@ -15,6 +15,7 @@
           <strong>{{ displayName }}</strong>
           <small class="u-label">@{{ account }}</small>
         </div>
+        <ThemeToggle />
         <div class="source-switch" role="group" aria-label="数据源">
           <button type="button" class="source-btn" @click="goLocalChat">本地 H2</button>
           <button type="button" class="source-btn active" disabled>远程 MySQL</button>
@@ -174,9 +175,11 @@ import {
   getRemoteChatMessages,
   sendRemoteChatMessage
 } from '../api/remoteChat'
+import ThemeToggle from '../components/ThemeToggle.vue'
 
 export default {
   name: 'RemoteChatRoom',
+  components: { ThemeToggle },
   data() {
     return {
       userInfo: {},
@@ -468,13 +471,13 @@ export default {
   height: 34px;
   border-radius: 9px;
   background: linear-gradient(150deg, var(--violet), var(--accent));
-  color: #fff;
+  color: var(--on-remote);
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
   font-size: 14px;
-  box-shadow: 0 6px 14px -4px rgba(124, 92, 255, .5);
+  box-shadow: 0 0 24px -6px color-mix(in srgb, var(--violet) 55%, transparent);
 }
 .brand-text { display: flex; flex-direction: column; line-height: 1.3; }
 .brand-text strong { font-size: 12.5px; letter-spacing: .05em; }
@@ -485,8 +488,8 @@ export default {
   font-size: 9.5px;
   letter-spacing: .12em;
   color: var(--violet);
-  background: rgba(124, 92, 255, .08);
-  border: 1px solid rgba(124, 92, 255, .25);
+  background: color-mix(in srgb, var(--violet) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--violet) 25%, transparent);
   border-radius: 999px;
   padding: 3px 9px;
 }
@@ -550,7 +553,7 @@ export default {
   display: flex;
   flex-direction: column;
   min-height: 0;
-  background: var(--surface);
+  background: var(--panel);
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
   box-shadow: var(--shadow-xs);
@@ -586,7 +589,7 @@ export default {
   transition: background var(--dur-1) var(--ease-2), border-color var(--dur-1) var(--ease-2);
 }
 .group-item:hover { background: var(--bg-inset); }
-.group-item.active { background: rgba(124, 92, 255, .07); border-color: rgba(124, 92, 255, .22); }
+.group-item.active { background: color-mix(in srgb, var(--violet) 7%, transparent); border-color: color-mix(in srgb, var(--violet) 22%, transparent); }
 .group-avatar {
   width: 32px;
   height: 32px;
@@ -600,7 +603,7 @@ export default {
   font-size: 12px;
   font-weight: 650;
 }
-.group-item.active .group-avatar { background: var(--violet); color: #fff; }
+.group-item.active .group-avatar { background: var(--violet); color: var(--on-remote); }
 .group-main { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
 .group-title { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .group-title strong { font-size: 12.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -653,7 +656,7 @@ export default {
   font-size: 12px;
   font-weight: 650;
 }
-.message-item.mine .msg-avatar { background: rgba(124, 92, 255, .12); border-color: rgba(124, 92, 255, .2); color: var(--violet); }
+.message-item.mine .msg-avatar { background: color-mix(in srgb, var(--violet) 12%, transparent); border-color: color-mix(in srgb, var(--violet) 22%, transparent); color: var(--violet); }
 .msg-body { min-width: 0; }
 .msg-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
 .msg-meta strong { font-size: 12px; }
@@ -673,8 +676,8 @@ export default {
   word-break: break-word;
 }
 .message-item.mine .msg-content {
-  background: rgba(124, 92, 255, .09);
-  border-color: rgba(124, 92, 255, .18);
+  background: color-mix(in srgb, var(--violet) 9%, transparent);
+  border-color: color-mix(in srgb, var(--violet) 20%, transparent);
   border-radius: 10px 2px 10px 10px;
 }
 

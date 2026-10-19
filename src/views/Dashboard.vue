@@ -74,10 +74,10 @@ export default {
     },
     statCards() {
       return [
-        { code: 'USR.TOTAL', label: '用户总数', value: this.userCount, icon: 'UserFilled', color: '#0a84ff' },
-        { code: 'TASK.PENDING', label: '待办任务', value: 18, icon: 'Clock', color: '#d99100' },
-        { code: 'TASK.DONE', label: '已完成任务', value: 421, icon: 'CircleCheck', color: '#17a673' },
-        { code: 'SYS.MSG', label: '系统消息', value: 6, icon: 'Bell', color: '#7c5cff' }
+        { code: 'USR.TOTAL', label: '用户总数', value: this.userCount, icon: 'UserFilled', color: '#5ef2d6' },
+        { code: 'TASK.PENDING', label: '待办任务', value: 18, icon: 'Clock', color: '#f4d35e' },
+        { code: 'TASK.DONE', label: '已完成任务', value: 421, icon: 'CircleCheck', color: '#58a6ff' },
+        { code: 'SYS.MSG', label: '系统消息', value: 6, icon: 'Bell', color: '#ff3d81' }
       ]
     }
   },
@@ -88,9 +88,11 @@ export default {
     this.initBarChart()
     this.initPieChart()
     window.addEventListener('resize', this.handleResize)
+    window.addEventListener('theme-change', this.handleThemeChange)
   },
   beforeUnmount() {
     window.removeEventListener('resize', this.handleResize)
+    window.removeEventListener('theme-change', this.handleThemeChange)
     this.barChart && this.barChart.dispose()
     this.pieChart && this.pieChart.dispose()
   },
@@ -112,36 +114,37 @@ export default {
     },
 
     initBarChart() {
+      const p = this.chartPalette()
       this.barChart = echarts.init(this.$refs.barRef)
       this.barChart.setOption({
-        tooltip: { trigger: 'axis', borderWidth: 0, backgroundColor: 'rgba(13,21,32,.92)', textStyle: { color: '#fff', fontSize: 12 } },
-        legend: { data: ['已完成', '待办'], top: 0, right: 0, icon: 'roundRect', itemWidth: 10, itemHeight: 10, textStyle: { color: '#5a6672', fontSize: 12 } },
+        tooltip: { trigger: 'axis', borderWidth: 1, borderColor: p.tooltipBorder, backgroundColor: p.tooltipBg, textStyle: { color: p.text, fontSize: 12 } },
+        legend: { data: ['已完成', '待办'], top: 0, right: 0, icon: 'rect', itemWidth: 10, itemHeight: 10, textStyle: { color: p.muted, fontSize: 12 } },
         grid: { left: 8, right: 8, bottom: 4, top: 44, containLabel: true },
         xAxis: {
           type: 'category',
           data: ['1月', '2月', '3月', '4月', '5月', '6月'],
-          axisLine: { lineStyle: { color: '#e3e8ee' } },
+          axisLine: { lineStyle: { color: p.line } },
           axisTick: { show: false },
-          axisLabel: { color: '#98a2ae', fontSize: 11 }
+          axisLabel: { color: p.faint, fontSize: 11 }
         },
         yAxis: {
           type: 'value',
-          splitLine: { lineStyle: { color: '#f2f5f8' } },
-          axisLabel: { color: '#98a2ae', fontSize: 11 }
+          splitLine: { lineStyle: { color: p.split } },
+          axisLabel: { color: p.faint, fontSize: 11 }
         },
         series: [
           {
             name: '已完成',
             type: 'bar',
             barWidth: 12,
-            itemStyle: { color: '#0a84ff', borderRadius: [4, 4, 0, 0] },
+            itemStyle: { color: p.bar1, borderRadius: [2, 2, 0, 0] },
             data: [120, 200, 150, 80, 70, 110]
           },
           {
             name: '待办',
             type: 'bar',
             barWidth: 12,
-            itemStyle: { color: '#d99100', borderRadius: [4, 4, 0, 0] },
+            itemStyle: { color: p.bar2, borderRadius: [2, 2, 0, 0] },
             data: [20, 32, 18, 30, 25, 12]
           }
         ]
@@ -149,25 +152,66 @@ export default {
     },
 
     initPieChart() {
+      const p = this.chartPalette()
       this.pieChart = echarts.init(this.$refs.pieRef)
       this.pieChart.setOption({
-        tooltip: { trigger: 'item', borderWidth: 0, backgroundColor: 'rgba(13,21,32,.92)', textStyle: { color: '#fff', fontSize: 12 } },
-        legend: { bottom: 0, icon: 'circle', itemWidth: 8, itemHeight: 8, textStyle: { color: '#5a6672', fontSize: 12 } },
-        color: ['#0a84ff', '#17a673'],
+        tooltip: { trigger: 'item', borderWidth: 1, borderColor: p.tooltipBorder, backgroundColor: p.tooltipBg, textStyle: { color: p.text, fontSize: 12 } },
+        legend: { bottom: 0, icon: 'circle', itemWidth: 8, itemHeight: 8, textStyle: { color: p.muted, fontSize: 12 } },
+        color: [p.bar1, p.pieSecond],
         series: [
           {
             name: '角色分布',
             type: 'pie',
             radius: ['56%', '76%'],
             center: ['50%', '44%'],
-            itemStyle: { borderColor: '#fff', borderWidth: 3 },
-            label: { formatter: '{b}\n{c}', color: '#5a6672', fontSize: 11, lineHeight: 16 },
-            labelLine: { lineStyle: { color: '#e3e8ee' } },
+            itemStyle: { borderColor: p.pieBorder, borderWidth: 3 },
+            label: { show: false },
+            labelLine: { show: false },
             data: []
           }
         ]
       })
       this.updatePieChart()
+    },
+
+    chartPalette() {
+      const dark = document.documentElement.classList.contains('dark')
+      return dark
+        ? {
+            tooltipBg: 'rgba(5,10,16,.96)',
+            tooltipBorder: 'rgba(94,242,214,.22)',
+            text: '#e8f4f6',
+            muted: '#9fb4be',
+            faint: '#607680',
+            line: 'rgba(126,196,208,.20)',
+            split: 'rgba(126,196,208,.08)',
+            bar1: '#5ef2d6',
+            bar2: '#ff3d81',
+            pieSecond: '#58a6ff',
+            pieBorder: '#0a1018'
+          }
+        : {
+            tooltipBg: 'rgba(255,255,255,.98)',
+            tooltipBorder: 'rgba(0,168,143,.22)',
+            text: '#081418',
+            muted: '#415a63',
+            faint: '#78909a',
+            line: 'rgba(8,40,45,.16)',
+            split: 'rgba(8,40,45,.07)',
+            bar1: '#00a88f',
+            bar2: '#d61f69',
+            pieSecond: '#0b6fd0',
+            pieBorder: '#ffffff'
+          }
+    },
+
+    handleThemeChange() {
+      this.$nextTick(() => {
+        if (this.barChart) { this.barChart.dispose(); this.barChart = null }
+        if (this.pieChart) { this.pieChart.dispose(); this.pieChart = null }
+        this.initBarChart()
+        this.initPieChart()
+      })
     },
 
     updatePieChart() {
@@ -195,7 +239,7 @@ export default {
 <style scoped>
 .page { display: flex; flex-direction: column; gap: 20px; }
 .page-head { display: flex; align-items: flex-end; justify-content: space-between; }
-.page-head h2 { font-size: 22px; font-weight: 650; letter-spacing: -.02em; margin-bottom: 4px; }
+.page-head h2 { font-size: 24px; font-weight: 700; letter-spacing: -.04em; margin-bottom: 4px; }
 
 /* Bento 栅格 */
 .bento {
@@ -205,38 +249,51 @@ export default {
 }
 .tile {
   position: relative;
-  background: var(--surface);
+  background: var(--panel);
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
   box-shadow: var(--shadow-xs);
-  transition: transform var(--dur-2) var(--ease), box-shadow var(--dur-2) var(--ease), border-color var(--dur-2) var(--ease-2);
+  overflow: hidden;
+  transition: transform var(--dur-2) var(--ease), box-shadow var(--dur-2) var(--ease), border-color var(--dur-2) var(--ease-2), background .35s var(--ease-2);
+}
+.tile::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent) 45%, transparent), transparent);
+  opacity: .55;
+  pointer-events: none;
 }
 .tile:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md), 0 0 40px -24px rgba(94, 242, 214, .5);
   border-color: var(--line-2);
 }
 
 .tile-stat { grid-column: span 3; padding: 18px 18px 16px; overflow: hidden; }
 .tile-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
-.tile-icon { font-size: 17px; opacity: .9; }
-.tile-value { font-size: 30px; font-weight: 680; letter-spacing: -.02em; line-height: 1.05; }
-.tile-label { font-size: 13px; color: var(--text-2); margin-top: 5px; }
+.tile-icon { font-size: 17px; opacity: .9; filter: drop-shadow(0 0 8px currentColor); }
+.tile-value { font-family: var(--display); font-size: 34px; font-weight: 700; letter-spacing: -.04em; line-height: 1.05; }
+.tile-label { font-size: 12px; color: var(--text-3); margin-top: 5px; }
 .tile-accent {
   position: absolute;
   left: 0;
   top: 18px;
   bottom: 18px;
-  width: 3px;
-  border-radius: 0 3px 3px 0;
-  opacity: .9;
+  width: 2px;
+  border-radius: 0 2px 2px 0;
+  opacity: .95;
+  box-shadow: 0 0 14px currentColor;
 }
 
 .tile-chart { padding: 18px 18px 8px; }
 .col-8 { grid-column: span 8; }
 .col-4 { grid-column: span 4; }
 .tile-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
-.tile-head h3 { font-size: 14px; font-weight: 600; }
+.tile-head h3 { font-family: var(--display); font-size: 15px; font-weight: 600; letter-spacing: -.02em; }
 .chart { width: 100%; }
 
 @media (max-width: 1200px) {

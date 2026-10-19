@@ -55,12 +55,12 @@ export default {
   width: 100px;
   height: 100px;
   overflow: hidden;
-  border: 1px dashed #d9d9d9;
-  border-radius: 6px;
+  border: 1px dashed var(--line-2);
+  border-radius: 4px;
   cursor: pointer;
 }
 .avatar-uploader :deep(.el-upload:hover) {
-  border-color: #409eff;
+  border-color: var(--accent);
 }
 .avatar {
   width: 100px;
@@ -69,11 +69,11 @@ export default {
 }
 .avatar-uploader-icon {
   font-size: 28px;
-  color: #8c939d;
+  color: var(--text-3);
 }
 .tip {
   margin-top: 8px;
   font-size: 12px;
-  color: #909399;
+  color: var(--text-3);
 }
 </style>

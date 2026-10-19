@@ -1,6 +1,7 @@
 <template>
   <div class="auth mesh noise">
     <ParticleField class="bg-fx" />
+    <ThemeToggle class="auth-theme" />
 
     <div class="card reveal is-visible">
       <header class="card-head">
@@ -48,10 +49,11 @@
 <script>
 import { register as registerApi } from '../api/auth'
 import ParticleField from '../components/ParticleField.vue'
+import ThemeToggle from '../components/ThemeToggle.vue'
 
 export default {
   name: "Register",
-  components: { ParticleField },
+  components: { ParticleField, ThemeToggle },
   data() {
     const checkUsername = (rule, value, callback) => {
       if (!/^[A-Za-z0-9_]{4,20}$/.test(value || '')) {
@@ -134,6 +136,7 @@ export default {
   justify-content: center;
   overflow: hidden;
 }
+.auth-theme { position: absolute; top: 24px; right: 24px; z-index: 3; }
 .bg-fx { z-index: 0; }
 
 .card {
@@ -141,20 +144,20 @@ export default {
   z-index: 1;
   width: 440px;
   padding: 30px 32px 22px;
-  background: rgba(255, 255, 255, .82);
-  backdrop-filter: saturate(180%) blur(20px);
-  -webkit-backdrop-filter: saturate(180%) blur(20px);
-  border: 1px solid rgba(255, 255, 255, .9);
-  border-radius: 18px;
+  background: var(--auth-card);
+  backdrop-filter: saturate(180%) blur(24px);
+  -webkit-backdrop-filter: saturate(180%) blur(24px);
+  border: 1px solid var(--auth-border);
+  border-radius: 6px;
   box-shadow: var(--shadow-lg);
 }
 .card::before {
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: 18px;
+  border-radius: 6px;
   padding: 1px;
-  background: linear-gradient(150deg, rgba(10, 132, 255, .35), rgba(124, 92, 255, .18), transparent 60%);
+  background: linear-gradient(150deg, rgba(94, 242, 214, .55), rgba(88, 166, 255, .20), transparent 45%, rgba(255, 61, 129, .30));
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
@@ -165,16 +168,18 @@ export default {
 .logo {
   width: 40px;
   height: 40px;
-  border-radius: 11px;
-  background: linear-gradient(150deg, var(--accent), var(--accent-2));
-  color: #fff;
-  font-weight: 700;
+  border-radius: 4px;
+  background: linear-gradient(135deg, var(--accent), var(--ice));
+  color: var(--on-accent);
+  font-family: var(--display);
+  font-weight: 800;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8px 18px -6px rgba(10, 132, 255, .6);
+  clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
+  box-shadow: 0 0 28px -6px rgba(94, 242, 214, .65);
 }
-.card-head h1 { font-size: 18px; font-weight: 650; letter-spacing: -.01em; margin-bottom: 3px; }
+.card-head h1 { font-family: var(--display); font-size: 20px; font-weight: 700; letter-spacing: -.04em; margin-bottom: 3px; }
 
 .form { display: flex; flex-direction: column; gap: 14px; }
 .field { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 0; }
@@ -192,17 +197,17 @@ export default {
   height: 44px;
   margin-top: 8px;
   border: none;
-  border-radius: var(--r-md);
-  background: var(--text);
-  color: #fff;
+  border-radius: 3px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: var(--on-accent);
   font-size: 12.5px;
-  font-weight: 600;
-  letter-spacing: .1em;
+  font-weight: 700;
+  letter-spacing: .14em;
   cursor: pointer;
   transition: transform var(--dur-1) var(--ease), box-shadow var(--dur-2) var(--ease), background var(--dur-1);
-  box-shadow: 0 1px 2px rgba(13, 21, 32, .12);
+  box-shadow: 0 0 28px -8px rgba(94, 242, 214, .7);
 }
-.primary:hover:not(:disabled) { background: #16202c; box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.primary:hover:not(:disabled) { background: linear-gradient(135deg, #8bffe7, #d8fff8); box-shadow: 0 0 36px -6px rgba(94, 242, 214, .85); transform: translateY(-1px); }
 .primary:active:not(:disabled) { transform: translateY(0) scale(.995); }
 .primary:disabled { opacity: .55; cursor: not-allowed; }
 

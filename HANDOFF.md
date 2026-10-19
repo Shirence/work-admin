@@ -64,6 +64,7 @@ npm run serve
 | 请求 | Axios（封装在 `src/api/request.js`） |
 | 图表 | ECharts 5 |
 | 端到端加密 | `@privacyresearch/libsignal-protocol-typescript`（X3DH + Double Ratchet，浏览器本地密钥） |
+| 主题 | light / dark 双主题，`localStorage.workadmin-theme`，`ThemeToggle.vue` 全局切换 |
 | Mock | MockJS（可通过开关关闭） |
 | 构建 | Vue CLI 5（webpack 5）+ Babel |
 | 后端 | Spring Boot 3.5.16 + Spring Web + Spring Data JPA + Bean Validation |
@@ -125,7 +126,10 @@ work-admin/
 │   ├── utils/
 │   │   ├── bytes.js            # ArrayBuffer/Base64
 │   │   ├── signalStore.js      # libsignal StorageType 的 localStorage 实现
-│   │   └── chatCrypto.js       # 设备密钥生成、会话建立、逐设备加解密
+│   │   ├── chatCrypto.js       # 设备密钥生成、会话建立、逐设备加解密
+│   │   └── theme.js            # light/dark 主题持久化与切换
+│   ├── components/
+│   │   └── ThemeToggle.vue     # 顶栏/登录页主题切换按钮
 │   ├── views/
 │   │   ├── Layout.vue          # 中台骨架（玻璃顶栏 + 侧栏 + 内容区）
 │   │   ├── Login.vue
@@ -362,81 +366,94 @@ if (process.env.VUE_APP_USE_MOCK === 'true') {
 
 ---
 
-## 7. 界面设计系统（白色基调）
+## 7. 界面设计系统（深空工业 HUD · 双主题）
 
-### 7.1 四层结构
+### 7.1 美学方向
 
-| 层 | 目标 | 实现 |
-|---|---|---|
-| **材质感** | 页面不像模板 | 细边框 + 分层轻阴影 + `backdrop-filter` 玻璃 + SVG 噪点 + 柔和渐变网格 |
-| **呼吸感** | 页面会呼吸 | 自定义缓动 + `v-reveal` 滚动淡入 + hover 反馈 + 错落延迟 + 尊重 reduced-motion |
-| **空间感** | 有深度 | `ParticleField.vue` Canvas 2D 粒子场（登录/注册页），只做氛围 |
-| **组件系统** | 像真实产品 | `App.vue :root` 单一 token 源 + 对齐 Element Plus 变量 + 统一 Bento 栅格 |
+**工业未来主义 / 深空控制台**，刻意避开 Inter、白底紫色渐变、通用卡片堆叠：
 
-### 7.2 Design Tokens（全部在 `src/App.vue` 的 `:root`）
+- 深色主题：深空黑底 + 薄荷青主色 + 冰蓝/品红点缀 + 网格/扫描线/辉光
+- 浅色主题：冷白实验室 + 薄荷青 + 极细网格 + 深墨文字
+- 展示字体 **Syne**，正文 **DM Sans**，等宽 **JetBrains Mono**
+- 圆角收窄到 2/4/8px，用 HUD 角标、细线、序号、状态灯建立工业感
+- 动效克制：`v-reveal`、hover 位移、扫描线、状态灯呼吸，尊重 reduced-motion
+
+### 7.2 Design Tokens
+
+所有 token 在 `src/App.vue`：
+
+- `:root` = 浅色主题
+- `html.dark` = 深色主题
+- 页面组件只使用 `var(--*)`，不要硬编码颜色
+
+核心颜色：
 
 ```css
-/* 颜色 */
---bg:#ffffff; --bg-sub:#fafbfc; --bg-inset:#f4f6f9;
---line:#eef1f4; --line-2:#e3e8ee; --line-3:#d5dce4;
---text:#0d1520; --text-2:#5a6672; --text-3:#98a2ae;
---accent:#0a84ff; --accent-2:#4da3ff;
---accent-soft:rgba(10,132,255,.08); --accent-line:rgba(10,132,255,.28);
---ok:#17a673; --warn:#d99100; --danger:#e5484d; --violet:#7c5cff;
+/* 浅色 */
+--bg:#f3f7f8; --surface:#ffffff; --text:#081418; --text-2:#415a63; --text-3:#78909a;
+--accent:#00a88f; --accent-2:#3fd8bf; --ice:#0b6fd0; --violet:#d61f69;
 
-/* 圆角 */
---r-sm:6px; --r-md:10px; --r-lg:14px;
-
-/* 阴影（分层、低对比） */
---shadow-xs:0 1px 2px rgba(13,21,32,.04);
---shadow-sm:0 1px 2px ..., 0 2px 6px -1px ...;
---shadow-md:0 2px 4px ..., 0 10px 24px -6px ...;
---shadow-lg:0 4px 8px ..., 0 24px 48px -12px ...;
-
-/* 动效 */
---ease:cubic-bezier(.16,1,.3,1); --ease-2:cubic-bezier(.4,0,.2,1);
---dur-1:.18s; --dur-2:.32s; --dur-3:.6s;
-
-/* 字体 */
---mono:'JetBrains Mono','Cascadia Mono',Consolas,'SF Mono',Menlo,monospace;
---sans:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;
+/* 深色 */
+--bg:#05080d; --surface:#0a1018; --text:#e8f4f6; --text-2:#9fb4be; --text-3:#607680;
+--accent:#5ef2d6; --accent-2:#9dffcf; --ice:#58a6ff; --violet:#ff3d81;
 ```
 
-同时覆盖了 Element Plus 变量：`--el-color-primary:#0a84ff`、`--el-border-radius-base:8px`、
-`--el-text-color-*`、`--el-border-color` 等。
+同时覆盖 Element Plus 变量，并在 `html` 上用 `!important` 兜底
+（EP 的 `:root` 变量在部分构建顺序下会覆盖 App 样式）：
 
-### 7.3 全局工具类
+```css
+html {
+  --el-color-primary: var(--accent) !important;
+  --el-bg-color: var(--surface) !important;
+  --el-text-color-primary: var(--text) !important;
+  /* ... */
+}
+```
+
+### 7.3 主题切换
+
+- `src/utils/theme.js`
+  - `getTheme()`：优先 `localStorage.workadmin-theme`，其次系统 `prefers-color-scheme`
+  - `applyTheme(theme)`：切换 `html.dark`、写入 localStorage、更新 `meta[theme-color]`
+  - 派发 `window` 事件 `theme-change`
+- `src/components/ThemeToggle.vue`
+  - 顶栏/登录页右上角的 `LIGHT / DARK` 按钮
+  - 已放在 `Layout.vue`、四个 auth 页、`RemoteChatRoom.vue`
+- `main.js` 在挂载前 `initTheme()`，避免刷新闪白/闪黑
+- `Dashboard.vue` 监听 `theme-change`，销毁并重建 ECharts，保证图表颜色跟随主题
+
+### 7.4 全局工具类
 
 | 类 | 作用 |
 |---|---|
 | `.mono` | 等宽字体 |
-| `.u-label` | 10px 等宽大写小标签（letter-spacing .12em） |
+| `.u-label` | 10px 等宽大写小标签（letter-spacing .16em） |
 | `.u-hint` | 12px 次要说明文字 |
-| `.mesh` | 三处柔和 radial-gradient 组成的渐变网格背景 |
-| `.noise` | `::after` 叠加 SVG feTurbulence 噪点（需要父元素 `position:relative`） |
-| `.glass` | 半透明白 + `backdrop-filter: saturate(180%) blur(14px)` |
-| `.surface` | 白底 + 细边框 + 圆角 + 轻阴影 |
-| `.reveal` / `.reveal.is-visible` | 滚动淡入的起止态 |
-
-### 7.4 `v-reveal` 指令（`src/directives/reveal.js`）
-
-- 单例 `IntersectionObserver`（threshold .08，rootMargin 底部 -32px）
-- 进入视口 → 加 `.is-visible` → unobserve
-- 用法：`v-reveal` / `v-reveal="120"` / `v-reveal="{delay:120}"`（数字=延迟 ms，做错落）
-- 不支持 IntersectionObserver 时直接显示
+| `.mesh` | 网格 + 三处 radial-gradient 光晕背景（随主题切换） |
+| `.noise` | 扫描线 + SVG feTurbulence 噪点 |
+| `.glass` | 半透明主题面板 + `backdrop-filter` |
+| `.surface` | 面板渐变 + 细边框 + 圆角 + 轻阴影 |
+| `.hud-corners` | HUD 角标（左上/右下细线） |
+| `.reveal` / `.reveal.is-visible` | 滚动淡入 + 轻微模糊过渡 |
 
 ### 7.5 页面结构要点
 
 | 页面 | 结构 |
 |---|---|
-| `Layout.vue` | 232px 侧栏（白底、`nav-rail` 滑动高亮条、底部状态灯）+ 玻璃吸顶顶栏（sticky + backdrop-filter）+ `.content.mesh.noise` 内容区 |
-| `Login.vue` / `Register.vue` | 全屏 `.mesh.noise` + `<ParticleField>` + 玻璃卡（`mask-composite` 做渐变描边）+ 深色主按钮 |
-| `Dashboard.vue` | CSS Grid `repeat(12,1fr)` Bento：4 个 `span 3` 指标块 + 柱状图 `span 8` + 环形图 `span 4`；断点 1200/680 |
-| `User.vue` | 页头 + `surface` 面板 + 工具栏 + 精修表格（首字母头像、角色胶囊、`el-empty` 空状态） |
+| `Layout.vue` | 248px 侧栏（HUD 网格、六边形品牌标、序号导航、LINK STABLE）+ 玻璃顶栏（主题切换/角色/用户/EXIT）+ `.content.mesh.noise` |
+| `Login.vue` / `Register.vue` | 全屏 `.mesh.noise` + `<ParticleField>` + 玻璃卡（渐变描边）+ 薄荷渐变主按钮 + 右上角主题切换 |
+| `RemoteLogin.vue` / `RemoteRegister.vue` | 同上，但使用品红/冰蓝远程色系；注册独立为 `/remote-register` |
+| `Dashboard.vue` | Bento 栅格 + 主题感知的 ECharts（柱状/环形） |
+| `User.vue` | 页头 + 面板 + 表格；表头由全局深/浅色样式接管 |
+| `Chat.vue` | 本地 E2EE 消息页；顶部「本地 H2 / 远程 MySQL」切换 |
+| `RemoteChat.vue` | 管理员只读观察台；4 指标 + 群组/消息双栏 |
+| `RemoteChatRoom.vue` | 远程群聊；独立登录态 + 主题切换 + 数据源切换 |
 
-> ⚠️ **Element Plus 样式顺序**：`main.js` 里 `import App from './App.vue'` 在
-> `import 'element-plus/dist/index.css'` 之前，理论上 App 的 `:root` 可能被 EP 覆盖。
-> 如果发现主色不是 `#0a84ff`，把 `element-plus/dist/index.css` 的 import 提到 `App.vue` 之前即可。
+### 7.6 注意
+
+- `main.js` 已引入 `element-plus/theme-chalk/dark/css-vars.css`，主题切换依赖 `html.dark`
+- 如果 EP 主色仍是默认蓝，检查 `App.vue` 末尾 `html { --el-color-primary: var(--accent) !important; }` 是否被后续样式覆盖
+- ECharts 不读取 CSS 变量，颜色在 `Dashboard.vue#chartPalette()` 里按主题显式返回
 
 ---
 
@@ -477,6 +494,7 @@ npx serve -s dist           # 本地预览 dist（-s 必须有，history 模式�
 | **远程观察台** | admin 登录后打开 `/remote`，能看到远程库的群组/消息即说明 MySQL 旁路连接生效 |
 | **远程账号群聊** | 登录页点「远程账号登录 →」，可登录或注册远程账号；进入 `/remote-chat` 后能加入群并发消息即说明远程读写链路生效 |
 | **本地 E2EE 消息** | 登录后进入 `/chat`，首次会生成设备密钥；发送消息后 Network 里 `/api/chat/messages` 的 envelopes 是密文，接收端能显示明文即说明 libsignal 链路生效 |
+| **双主题** | 右上角 `LIGHT / DARK` 切换，刷新后保持；Dashboard 图表、Element Plus 表格/弹窗颜色一起变化 |
 | **curl 直连** | `Invoke-RestMethod http://localhost:8081/api/health` |
 
 > 之前实测：登录后 Network 出现
