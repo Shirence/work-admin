@@ -16,10 +16,7 @@
           <small class="u-label">@{{ account }}</small>
         </div>
         <ThemeToggle />
-        <div class="source-switch" role="group" aria-label="数据源">
-          <button type="button" class="source-btn" @click="goLocalChat">本地 H2</button>
-          <button type="button" class="source-btn active" disabled>远程 MySQL</button>
-        </div>
+        <SourceSwitch mode="remote" @change="onSourceChange" />
         <button class="btn-ghost mono" type="button" @click="handleLogout">EXIT</button>
       </div>
     </header>
@@ -176,10 +173,11 @@ import {
   sendRemoteChatMessage
 } from '../api/remoteChat'
 import ThemeToggle from '../components/ThemeToggle.vue'
+import SourceSwitch from '../components/SourceSwitch.vue'
 
 export default {
   name: 'RemoteChatRoom',
-  components: { ThemeToggle },
+  components: { ThemeToggle, SourceSwitch },
   data() {
     return {
       userInfo: {},
@@ -399,6 +397,10 @@ export default {
       }
     },
 
+    onSourceChange(mode) {
+      if (mode === 'local') this.goLocalChat()
+    },
+
     clearSession() {
       localStorage.removeItem('remoteToken')
       localStorage.removeItem('remoteUserInfo')
@@ -457,82 +459,69 @@ export default {
   position: sticky;
   top: 0;
   z-index: 20;
-  height: 64px;
+  height: 72px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 22px;
+  padding: 0 28px;
   border-bottom: 1px solid var(--line);
+  background: var(--surface-2);
 }
-.brand { display: flex; align-items: center; gap: 10px; }
+.remote-top::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -1px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--violet) 45%, transparent), transparent);
+  opacity: .7;
+}
+.brand { display: flex; align-items: center; gap: 11px; }
 .logo {
-  width: 34px;
-  height: 34px;
-  border-radius: 9px;
-  background: linear-gradient(150deg, var(--violet), var(--accent));
+  width: 38px;
+  height: 38px;
+  border-radius: 4px;
+  background: linear-gradient(135deg, var(--violet), var(--ice));
   color: var(--on-remote);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 700;
-  font-size: 14px;
+  font-family: var(--display);
+  font-weight: 800;
+  font-size: 17px;
+  clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
   box-shadow: 0 0 24px -6px color-mix(in srgb, var(--violet) 55%, transparent);
 }
-.brand-text { display: flex; flex-direction: column; line-height: 1.3; }
-.brand-text strong { font-size: 12.5px; letter-spacing: .05em; }
-.brand-text small { font-size: 10px; color: var(--text-3); }
+.brand-text { display: flex; flex-direction: column; line-height: 1.35; }
+.brand-text strong { font-family: var(--display); font-size: 13px; font-weight: 700; letter-spacing: .16em; }
+.brand-text small { font-size: 9px; letter-spacing: .1em; color: var(--text-3); }
 
-.remote-user { display: flex; align-items: center; gap: 14px; }
+.remote-user { display: flex; align-items: center; gap: 12px; }
 .remote-badge {
-  font-size: 9.5px;
-  letter-spacing: .12em;
+  font-size: 9px;
+  letter-spacing: .14em;
   color: var(--violet);
   background: color-mix(in srgb, var(--violet) 8%, transparent);
   border: 1px solid color-mix(in srgb, var(--violet) 25%, transparent);
-  border-radius: 999px;
-  padding: 3px 9px;
+  border-radius: 2px;
+  padding: 4px 9px;
 }
 .who { display: flex; flex-direction: column; line-height: 1.25; }
 .who strong { font-size: 12.5px; }
 .btn-ghost {
-  font-size: 10.5px;
-  letter-spacing: .1em;
+  font-size: 10px;
+  letter-spacing: .12em;
   color: var(--text-2);
   background: transparent;
   border: 1px solid var(--line-2);
-  border-radius: var(--r-sm);
+  border-radius: 2px;
   padding: 6px 11px;
   cursor: pointer;
   transition: all var(--dur-1) var(--ease-2);
 }
 .btn-ghost:hover { color: var(--danger); border-color: rgba(229, 72, 77, .4); background: rgba(229, 72, 77, .06); }
-.source-switch {
-  display: flex;
-  gap: 2px;
-  padding: 2px;
-  background: var(--bg-inset);
-  border: 1px solid var(--line);
-  border-radius: var(--r-sm);
-}
-.source-btn {
-  border: 0;
-  background: transparent;
-  color: var(--text-3);
-  font-size: 11px;
-  padding: 5px 9px;
-  border-radius: 5px;
-  cursor: pointer;
-  white-space: nowrap;
-}
-.source-btn:hover:not(:disabled) { color: var(--text); }
-.source-btn.active {
-  color: var(--violet);
-  background: var(--surface);
-  box-shadow: var(--shadow-xs);
-  font-weight: 600;
-}
-.source-btn:disabled { cursor: default; }
 .local-link { font-size: 11px; color: var(--text-3); text-decoration: none; }
 .local-link:hover { color: var(--accent); }
 
@@ -546,7 +535,7 @@ export default {
   display: grid;
   grid-template-columns: minmax(270px, 320px) minmax(0, 1fr);
   gap: 16px;
-  height: calc(100vh - 64px);
+  height: calc(100vh - 72px);
 }
 
 .panel {
@@ -700,7 +689,7 @@ export default {
 .dim { color: var(--text-3); }
 
 @media (max-width: 900px) {
-  .remote-main { grid-template-columns: 1fr; height: auto; min-height: calc(100vh - 64px); }
+  .remote-main { grid-template-columns: 1fr; height: auto; min-height: calc(100vh - 72px); }
   .group-panel { max-height: 300px; }
   .chat-panel { min-height: 560px; }
   .remote-user .local-link { display: none; }

@@ -43,11 +43,12 @@
   --remote-card: rgba(255, 255, 255, .86);
   --remote-border: rgba(214, 31, 105, .26);
 
-  --grid-line: rgba(0, 168, 143, .05);
-  --scan-line: rgba(8, 20, 24, .018);
-  --glow-a: rgba(0, 168, 143, .10);
-  --glow-b: rgba(11, 111, 208, .07);
-  --glow-c: rgba(214, 31, 105, .045);
+  --grid-line: rgba(0, 168, 143, .14);
+  --scan-line: rgba(8, 20, 24, .035);
+  --scan-beam: rgba(0, 168, 143, .18);
+  --glow-a: rgba(0, 168, 143, .22);
+  --glow-b: rgba(11, 111, 208, .16);
+  --glow-c: rgba(214, 31, 105, .10);
   --overlay: rgba(243, 247, 248, .72);
 
   --r-sm: 2px;
@@ -137,11 +138,12 @@ html.dark {
   --remote-card: rgba(8, 12, 19, .82);
   --remote-border: rgba(255, 61, 129, .22);
 
-  --grid-line: rgba(94, 242, 214, .035);
-  --scan-line: rgba(255, 255, 255, .022);
-  --glow-a: rgba(94, 242, 214, .10);
-  --glow-b: rgba(88, 166, 255, .08);
-  --glow-c: rgba(255, 61, 129, .055);
+  --grid-line: rgba(94, 242, 214, .075);
+  --scan-line: rgba(255, 255, 255, .03);
+  --scan-beam: rgba(94, 242, 214, .10);
+  --glow-a: rgba(94, 242, 214, .16);
+  --glow-b: rgba(88, 166, 255, .13);
+  --glow-c: rgba(255, 61, 129, .09);
   --overlay: rgba(4, 7, 11, .66);
 
   --shadow-xs: inset 0 1px 0 rgba(255, 255, 255, .03);
@@ -207,6 +209,16 @@ h1, h2, h3, .display { font-family: var(--display); letter-spacing: -.03em; }
     radial-gradient(820px 520px at 60% 110%, var(--glow-c), transparent 60%);
   background-size: 48px 48px, 48px 48px, auto, auto, auto;
   background-attachment: fixed, fixed, fixed, fixed, fixed;
+  animation: meshDrift 5s ease-in-out infinite alternate;
+  will-change: background-position;
+}
+@keyframes meshDrift {
+  from {
+    background-position: 0 0, 0 0, 0% 0%, 100% 0%, 50% 100%;
+  }
+  to {
+    background-position: 48px 48px, 48px 48px, 7% 4%, 93% 7%, 50% 93%;
+  }
 }
 
 .noise { position: relative; }
@@ -216,9 +228,18 @@ h1, h2, h3, .display { font-family: var(--display); letter-spacing: -.03em; }
   inset: 0;
   pointer-events: none;
   z-index: 0;
-  background: repeating-linear-gradient(0deg, var(--scan-line) 0 1px, transparent 1px 4px);
-  opacity: .4;
+  background-image:
+    repeating-linear-gradient(0deg, var(--scan-line) 0 1px, transparent 1px 4px),
+    linear-gradient(180deg, transparent 0%, var(--scan-beam) 46%, var(--scan-beam) 54%, transparent 100%);
+  background-size: 100% 4px, 100% 38%;
+  background-repeat: repeat, no-repeat;
+  animation: scanBeam 3.6s linear infinite;
+  opacity: .85;
   transition: opacity .35s var(--ease-2);
+}
+@keyframes scanBeam {
+  from { background-position: 0 0, 0 -45%; }
+  to { background-position: 0 0, 0 145%; }
 }
 .noise::after {
   content: '';

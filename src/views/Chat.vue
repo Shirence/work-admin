@@ -6,10 +6,7 @@
         <p class="u-hint">端到端加密 · 每设备独立密钥 · 服务端只存密文</p>
       </div>
       <div class="head-actions">
-        <div class="source-switch" role="group" aria-label="数据源">
-          <button type="button" class="source-btn active" disabled>本地 H2</button>
-          <button type="button" class="source-btn" @click="goRemoteChat">远程 MySQL</button>
-        </div>
+        <SourceSwitch mode="local" @change="onSourceChange" />
         <template v-if="deviceState === 'active'">
           <span class="device-chip mono">DEVICE {{ localDevice.deviceId }}</span>
           <el-button size="small" @click="openPrivate">
@@ -254,11 +251,13 @@ import {
   encryptForDeviceBundles,
   decryptEnvelope
 } from '../utils/chatCrypto'
+import SourceSwitch from '../components/SourceSwitch.vue'
 
 const PLAIN_PREFIX = 'wa-plain'
 
 export default {
   name: 'Chat',
+  components: { SourceSwitch },
   data() {
     return {
       username: '',
@@ -636,6 +635,10 @@ export default {
       }
     },
 
+    onSourceChange(mode) {
+      if (mode === 'remote') this.goRemoteChat()
+    },
+
     async submitPrivate() {
       const target = this.privateTarget.trim()
       if (!target) {
@@ -844,32 +847,6 @@ export default {
 .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-shrink: 0; }
 .page-head h2 { font-size: 22px; font-weight: 650; letter-spacing: -.02em; margin-bottom: 4px; }
 .head-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
-.source-switch {
-  display: flex;
-  gap: 2px;
-  padding: 2px;
-  background: var(--bg-inset);
-  border: 1px solid var(--line);
-  border-radius: var(--r-sm);
-}
-.source-btn {
-  border: 0;
-  background: transparent;
-  color: var(--text-3);
-  font-size: 11px;
-  padding: 5px 9px;
-  border-radius: 5px;
-  cursor: pointer;
-  white-space: nowrap;
-}
-.source-btn:hover:not(:disabled) { color: var(--text); }
-.source-btn.active {
-  color: var(--accent);
-  background: var(--surface);
-  box-shadow: var(--shadow-xs);
-  font-weight: 600;
-}
-.source-btn:disabled { cursor: default; }
 .btn-icon { margin-right: 3px; }
 .device-chip {
   font-size: 9.5px;

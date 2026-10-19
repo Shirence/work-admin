@@ -129,7 +129,8 @@ work-admin/
 │   │   ├── chatCrypto.js       # 设备密钥生成、会话建立、逐设备加解密
 │   │   └── theme.js            # light/dark 主题持久化与切换
 │   ├── components/
-│   │   └── ThemeToggle.vue     # 顶栏/登录页主题切换按钮
+│   │   ├── ThemeToggle.vue     # light/dark 主题切换按钮
+│   │   └── SourceSwitch.vue    # 本地 H2 / 远程 MySQL 统一切换
 │   ├── views/
 │   │   ├── Layout.vue          # 中台骨架（玻璃顶栏 + 侧栏 + 内容区）
 │   │   ├── Login.vue
@@ -419,6 +420,9 @@ html {
 - `src/components/ThemeToggle.vue`
   - 顶栏/登录页右上角的 `LIGHT / DARK` 按钮
   - 已放在 `Layout.vue`、四个 auth 页、`RemoteChatRoom.vue`
+- `src/components/SourceSwitch.vue`
+  - 本地 `/chat` 与远程 `/remote-chat` 共用同一个「本地 H2 / 远程 MySQL」切换组件
+  - 两处 active 色、尺寸、字体完全一致
 - `main.js` 在挂载前 `initTheme()`，避免刷新闪白/闪黑
 - `Dashboard.vue` 监听 `theme-change`，销毁并重建 ECharts，保证图表颜色跟随主题
 
@@ -429,8 +433,8 @@ html {
 | `.mono` | 等宽字体 |
 | `.u-label` | 10px 等宽大写小标签（letter-spacing .16em） |
 | `.u-hint` | 12px 次要说明文字 |
-| `.mesh` | 网格 + 三处 radial-gradient 光晕背景（随主题切换） |
-| `.noise` | 扫描线 + SVG feTurbulence 噪点 |
+| `.mesh` | 网格 + 三处 radial-gradient 光晕背景（随主题切换；`meshDrift` 5s 漂移，浅色对比更强） |
+| `.noise` | 扫描线 + 动态 `scanBeam`（3.6s）+ SVG feTurbulence 噪点 |
 | `.glass` | 半透明主题面板 + `backdrop-filter` |
 | `.surface` | 面板渐变 + 细边框 + 圆角 + 轻阴影 |
 | `.hud-corners` | HUD 角标（左上/右下细线） |
@@ -447,7 +451,7 @@ html {
 | `User.vue` | 页头 + 面板 + 表格；表头由全局深/浅色样式接管 |
 | `Chat.vue` | 本地 E2EE 消息页；顶部「本地 H2 / 远程 MySQL」切换 |
 | `RemoteChat.vue` | 管理员只读观察台；4 指标 + 群组/消息双栏 |
-| `RemoteChatRoom.vue` | 远程群聊；独立登录态 + 主题切换 + 数据源切换 |
+| `RemoteChatRoom.vue` | 远程群聊；独立登录态 + 主题切换 + 共用数据源切换；顶栏 72px，与主布局顶栏对齐 |
 
 ### 7.6 注意
 
