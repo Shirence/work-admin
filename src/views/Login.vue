@@ -15,7 +15,7 @@
       <el-form ref="loginFormRef" :model="loginForm" size="large" class="form" @submit.prevent>
         <div class="field">
           <label class="u-label">账号</label>
-          <el-input v-model="loginForm.username" placeholder="admin / manager / viewer" clearable @keyup.enter="handleLogin" />
+          <el-input v-model="loginForm.username" placeholder="stu 账号，例如 admin" clearable @keyup.enter="handleLogin" />
         </div>
         <div class="field">
           <label class="u-label">密码</label>
@@ -27,7 +27,7 @@
       </el-form>
 
       <footer class="card-foot">
-        <span class="u-label">演示账号 admin / manager / viewer · 密码 123456</span>
+        <span class="u-label">演示账号 admin · 密码 123456（stu 真实账号）</span>
         <span class="foot-links">
           <router-link class="link" to="/register">注册账号 →</router-link>
         </span>

@@ -1,47 +1,30 @@
 package com.example.workadmin.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
 
 import java.time.LocalDateTime;
 
 /**
- * 登录账号表（与业务用户表 sys_user 分开）。
- * 密码只存 BCrypt 哈希，永不存明文。
+ * 登录用户的值对象。
+ * 数据来自 stu 项目的 `user` 表，这里只用于在内存里传递，不再映射成 JPA 实体。
  */
-@Entity
-@Table(name = "wa_sys_account")
 public class Account {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, length = 50)
     private String username;
 
     /** BCrypt 哈希值，长度 60 左右 */
-    @Column(nullable = false, length = 100)
     private String password;
 
-    @Column(nullable = false, unique = true, length = 100)
     private String email;
 
-    @Column(nullable = false, length = 20)
     private String role;
 
     /** sys_role.id；旧数据为 null 时按 role 编码回填。 */
-    @Column(name = "role_id")
     private Long roleId;
 
-    @Column(nullable = false)
     private Boolean enabled = true;
 
-    @Column(name = "created_at")
     private LocalDateTime createdAt;
 
     public Long getId() {

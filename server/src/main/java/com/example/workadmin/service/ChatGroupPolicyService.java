@@ -5,7 +5,6 @@ import com.example.workadmin.common.ChatConstants;
 import com.example.workadmin.dto.chat.GroupPolicyDtos;
 import com.example.workadmin.entity.ChatAccountGroupPermission;
 import com.example.workadmin.entity.ChatGroupPolicy;
-import com.example.workadmin.repository.AccountRepository;
 import com.example.workadmin.repository.ChatAccountGroupPermissionRepository;
 import com.example.workadmin.repository.ChatGroupPolicyRepository;
 import org.springframework.stereotype.Service;
@@ -43,14 +42,14 @@ public class ChatGroupPolicyService {
 
     private final ChatGroupPolicyRepository policyRepository;
     private final ChatAccountGroupPermissionRepository permissionRepository;
-    private final AccountRepository accountRepository;
+    private final StuStore store;
 
     public ChatGroupPolicyService(ChatGroupPolicyRepository policyRepository,
                                   ChatAccountGroupPermissionRepository permissionRepository,
-                                  AccountRepository accountRepository) {
+                                  StuStore store) {
         this.policyRepository = policyRepository;
         this.permissionRepository = permissionRepository;
-        this.accountRepository = accountRepository;
+        this.store = store;
     }
 
     @Transactional
@@ -96,7 +95,7 @@ public class ChatGroupPolicyService {
                                                              String targetUsername,
                                                              String overrideMode) {
         String username = targetUsername == null ? "" : targetUsername.trim();
-        if (!accountRepository.existsByUsername(username)) {
+        if (!store.accountExists(username)) {
             throw new BizException(404, "账号不存在：" + username);
         }
         String normalized = normalizeOverride(overrideMode);

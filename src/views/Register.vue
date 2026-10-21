@@ -14,12 +14,12 @@
 
       <el-form ref="formRef" :model="form" :rules="rules" size="large" class="form" @submit.prevent>
         <div class="field">
-          <label class="u-label">用户名</label>
+          <label class="u-label">账号</label>
           <el-input v-model="form.username" placeholder="4-20 位字母 / 数字 / 下划线" clearable />
         </div>
         <div class="field">
-          <label class="u-label">邮箱</label>
-          <el-input v-model="form.email" placeholder="you@example.com" clearable />
+          <label class="u-label">姓名</label>
+          <el-input v-model="form.name" placeholder="可留空，默认与账号相同" clearable />
         </div>
         <div class="row">
           <div class="field">
@@ -37,7 +37,7 @@
       </el-form>
 
       <footer class="card-foot">
-        <span class="u-label">注册后默认拥有只读权限</span>
+        <span class="u-label">注册即写入 stu 的 user 表，默认 member 角色</span>
         <router-link class="link" to="/login">← 返回登录</router-link>
       </footer>
     </div>
@@ -57,7 +57,7 @@ export default {
   data() {
     const checkUsername = (rule, value, callback) => {
       if (!/^[A-Za-z0-9_]{4,20}$/.test(value || '')) {
-        callback(new Error('用户名需为 4-20 位字母、数字或下划线'))
+        callback(new Error('账号需为 4-20 位字母、数字或下划线'))
       } else {
         callback()
       }
@@ -78,15 +78,11 @@ export default {
     }
     return {
       loading: false,
-      form: { username: '', email: '', password: '', confirmPassword: '' },
+      form: { username: '', name: '', password: '', confirmPassword: '' },
       rules: {
         username: [
-          { required: true, message: '请输入用户名', trigger: 'blur' },
+          { required: true, message: '请输入账号', trigger: 'blur' },
           { validator: checkUsername, trigger: 'blur' }
-        ],
-        email: [
-          { required: true, message: '请输入邮箱', trigger: 'blur' },
-          { type: 'email', message: '邮箱格式不正确', trigger: ['blur', 'change'] }
         ],
         password: [
           { required: true, message: '请输入密码', trigger: 'blur' },
@@ -110,7 +106,7 @@ export default {
       try {
         const res = await registerApi({
           username: this.form.username.trim(),
-          email: this.form.email.trim(),
+          name: this.form.name.trim(),
           password: this.form.password,
           confirmPassword: this.form.confirmPassword
         })

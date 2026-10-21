@@ -3,28 +3,31 @@ package com.example.workadmin.service;
 import com.example.workadmin.common.BizException;
 import com.example.workadmin.dto.MenuDtos;
 import com.example.workadmin.entity.Menu;
-import com.example.workadmin.repository.MenuRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
+/**
+ * 菜单与按钮权限，读写 stu 项目的 sys_menu 表。
+ */
 @Service
 public class MenuService {
 
     private static final Set<String> TYPES = Set.of("DIRECTORY", "MENU", "BUTTON");
 
-    private final MenuRepository menuRepository;
+    private final StuStore store;
 
-    public MenuService(MenuRepository menuRepository) {
-        this.menuRepository = menuRepository;
+    public MenuService(StuStore store) {
+        this.store = store;
     }
 
     public List<MenuDtos.MenuRow> list() {
-        return menuRepository.findAllByOrderBySortOrderAscIdAsc().stream().map(MenuService::toRow).toList();
+        return store.listMenus().stream().map(MenuService::toRow).toList();
     }
 
     public List<MenuDtos.MenuRow> permissionTree() {
@@ -35,39 +38,43 @@ public class MenuService {
     public MenuDtos.MenuRow create(MenuDtos.MenuRequest request) {
         Menu menu = new Menu();
         apply(menu, request);
-        menu.setBuiltin(false);
-        return toRow(menuRepository.save(menu));
+        long id = store.insertMenu(menu.getParentId(), menu.getName(), menu.getType(), menu.getPath(),
+                menu.getPermission(), menu.getSortOrder(), Boolean.TRUE.equals(menu.getEnabled()));
+        return rowById(id);
     }
 
     @Transactional
     public MenuDtos.MenuRow update(Long id, MenuDtos.MenuRequest request) {
-        Menu menu = menuRepository.findById(id)
+        StuStore.StuMenu existing = store.findMenuById(id)
                 .orElseThrow(() -> new BizException(404, "菜单节点不存在"));
-        if (Boolean.TRUE.equals(menu.getBuiltin())) {
-            // 内置节点只允许改名称和排序，避免破坏前端约定。
-            if (request.name() != null && !request.name().isBlank()) {
-                menu.setName(request.name().trim());
-            }
-            if (request.sortOrder() != null) {
-                menu.setSortOrder(Math.max(0, Math.min(9999, request.sortOrder())));
-            }
-            return toRow(menuRepository.save(menu));
+        if (existing.builtin()) {
+            // 内置节点只允许改名称和排序，避免破坏前端的权限约定
+            String name = request.name() == null || request.name().isBlank()
+                    ? existing.name() : request.name().trim();
+            int sort = request.sortOrder() == null ? existing.sortOrder()
+                    : Math.max(0, Math.min(9999, request.sortOrder()));
+            store.updateMenu(id, existing.parentId(), name, existing.type(), existing.path(),
+                    existing.permission(), sort, existing.enabled());
+            return rowById(id);
         }
+        Menu menu = toMenu(existing);
         apply(menu, request);
-        return toRow(menuRepository.save(menu));
+        store.updateMenu(id, menu.getParentId(), menu.getName(), menu.getType(), menu.getPath(),
+                menu.getPermission(), menu.getSortOrder(), Boolean.TRUE.equals(menu.getEnabled()));
+        return rowById(id);
     }
 
     @Transactional
     public void delete(Long id) {
-        Menu menu = menuRepository.findById(id)
+        StuStore.StuMenu menu = store.findMenuById(id)
                 .orElseThrow(() -> new BizException(404, "菜单节点不存在"));
-        if (Boolean.TRUE.equals(menu.getBuiltin())) {
+        if (menu.builtin()) {
             throw new BizException(409, "内置菜单不能删除");
         }
-        if (menuRepository.existsByParentId(id)) {
+        if (store.listMenus().stream().anyMatch(m -> m.parentId() != null && m.parentId() == id)) {
             throw new BizException(409, "请先删除子节点");
         }
-        menuRepository.delete(menu);
+        store.deleteMenu(id);
     }
 
     private void apply(Menu menu, MenuDtos.MenuRequest request) {
@@ -76,17 +83,21 @@ public class MenuService {
         if (name.length() > 100) throw new BizException(400, "菜单名称不能超过 100 字");
         String type = normalizeType(request.type());
         Long parentId = request.parentId();
+
+        Map<Long, StuStore.StuMenu> all = new HashMap<>();
+        store.listMenus().forEach(m -> all.put(m.id(), m));
+
         if (parentId != null) {
             if (parentId.equals(menu.getId())) throw new BizException(400, "上级节点不能是自己");
-            Menu parent = menuRepository.findById(parentId)
-                    .orElseThrow(() -> new BizException(400, "上级节点不存在"));
-            if (isDescendant(menu.getId(), parent)) {
+            StuStore.StuMenu parent = all.get(parentId);
+            if (parent == null) throw new BizException(400, "上级节点不存在");
+            if (isDescendant(menu.getId(), parent, all)) {
                 throw new BizException(400, "上级节点不能是自己的子节点");
             }
-            if ("BUTTON".equals(type) && !"MENU".equals(parent.getType())) {
+            if ("BUTTON".equals(type) && !"MENU".equals(parent.type())) {
                 throw new BizException(400, "按钮的上级必须是页面");
             }
-            if ("MENU".equals(type) && !"DIRECTORY".equals(parent.getType())) {
+            if ("MENU".equals(type) && !"DIRECTORY".equals(parent.type())) {
                 throw new BizException(400, "页面的上级必须是目录");
             }
         }
@@ -112,14 +123,13 @@ public class MenuService {
         menu.setEnabled(request.enabled() == null || request.enabled());
     }
 
-    private boolean isDescendant(Long menuId, Menu candidate) {
+    private boolean isDescendant(Long menuId, StuStore.StuMenu candidate, Map<Long, StuStore.StuMenu> all) {
         if (menuId == null) return false;
-        long guard = 0;
-        Menu current = candidate;
+        StuStore.StuMenu current = candidate;
+        int guard = 0;
         while (current != null && guard++ < 100) {
-            if (menuId.equals(current.getId())) return true;
-            current = current.getParentId() == null ? null
-                    : menuRepository.findById(current.getParentId()).orElse(null);
+            if (current.id() == menuId) return true;
+            current = current.parentId() == null ? null : all.get(current.parentId());
         }
         return false;
     }
@@ -136,8 +146,32 @@ public class MenuService {
         return trimmed.isEmpty() ? null : trimmed;
     }
 
+    private MenuDtos.MenuRow rowById(long id) {
+        return store.findMenuById(id).map(MenuService::toRow)
+                .orElseThrow(() -> new BizException(500, "读取菜单失败"));
+    }
+
+    private static Menu toMenu(StuStore.StuMenu menu) {
+        Menu value = new Menu();
+        value.setId(menu.id());
+        value.setParentId(menu.parentId());
+        value.setName(menu.name());
+        value.setType(menu.type());
+        value.setPath(menu.path());
+        value.setPermission(menu.permission());
+        value.setSortOrder(menu.sortOrder());
+        value.setEnabled(menu.enabled());
+        value.setBuiltin(menu.builtin());
+        return value;
+    }
+
     public static MenuDtos.MenuRow toRow(Menu menu) {
         return new MenuDtos.MenuRow(menu.getId(), menu.getParentId(), menu.getName(), menu.getType(),
                 menu.getPath(), menu.getPermission(), menu.getSortOrder(), menu.getEnabled(), menu.getBuiltin());
+    }
+
+    public static MenuDtos.MenuRow toRow(StuStore.StuMenu menu) {
+        return new MenuDtos.MenuRow(menu.id(), menu.parentId(), menu.name(), menu.type(),
+                menu.path(), menu.permission(), menu.sortOrder(), menu.enabled(), menu.builtin());
     }
 }

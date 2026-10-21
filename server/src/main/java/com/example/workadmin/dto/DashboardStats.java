@@ -4,15 +4,18 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
- * 仪表盘真实统计。没有数据时全部返回 0，前端不做假数据兜底。
+ * 仪表盘真实统计，全部来自 stu 项目的业务表。
+ * 没有数据时返回 0，前端不做假数据兜底。
  */
 public record DashboardStats(
+        /** `user` 表用户数 */
         long userCount,
-        long accountCount,
-        long conversationCount,
+        /** `chat_group` 群聊数 */
+        long groupCount,
+        /** `chat_message` 消息数 */
         long messageCount,
-        long deviceCount,
-        long activeDeviceCount,
+        /** `chat_member` 群成员关系数 */
+        long memberCount,
         List<DailyMessageCount> dailyMessages,
         List<RoleCount> roleDistribution,
         LocalDateTime fetchedAt

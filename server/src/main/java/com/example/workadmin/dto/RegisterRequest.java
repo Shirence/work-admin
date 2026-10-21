@@ -1,19 +1,20 @@
 package com.example.workadmin.dto;
 
-import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
 /**
- * 注册请求。校验规则与前端保持一致：
- *   用户名 4-20 位字母/数字/下划线
- *   密码   6-32 位，必须同时包含字母和数字
- *   邮箱   合法格式，且未被注册
+ * 注册请求（写入 stu 的 `user` 表，与该项目共用账号）。
+ * 校验规则与前端保持一致：
+ *   账号 4-20 位字母/数字/下划线
+ *   密码 6-32 位，必须同时包含字母和数字
+ *   姓名 可选，不填则用账号
  */
 public class RegisterRequest {
 
-    @NotBlank(message = "用户名不能为空")
-    @Pattern(regexp = "^[A-Za-z0-9_]{4,20}$", message = "用户名需为 4-20 位字母、数字或下划线")
+    @NotBlank(message = "账号不能为空")
+    @Pattern(regexp = "^[A-Za-z0-9_]{4,20}$", message = "账号需为 4-20 位字母、数字或下划线")
     private String username;
 
     @NotBlank(message = "密码不能为空")
@@ -24,9 +25,8 @@ public class RegisterRequest {
     @NotBlank(message = "请再次输入密码")
     private String confirmPassword;
 
-    @NotBlank(message = "邮箱不能为空")
-    @Email(message = "邮箱格式不正确")
-    private String email;
+    @Size(max = 50, message = "姓名不能超过 50 个字符")
+    private String name;
 
     public String getUsername() {
         return username;
@@ -52,11 +52,11 @@ public class RegisterRequest {
         this.confirmPassword = confirmPassword;
     }
 
-    public String getEmail() {
-        return email;
+    public String getName() {
+        return name;
     }
 
-    public void setEmail(String email) {
-        this.email = email;
+    public void setName(String name) {
+        this.name = name;
     }
 }

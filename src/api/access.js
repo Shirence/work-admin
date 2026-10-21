@@ -52,8 +52,8 @@ export function deleteMenu(id) {
   return request({ url: `/menus/${id}`, method: 'delete' })
 }
 
-export function getAccounts() {
-  return request({ url: '/users', method: 'get' })
+export function getAccounts(keyword) {
+  return request({ url: '/users', method: 'get', params: keyword ? { keyword } : {} })
 }
 
 export function createAccount(data) {

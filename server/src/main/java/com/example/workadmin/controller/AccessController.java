@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestAttribute;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -41,8 +42,9 @@ public class AccessController {
 
     @GetMapping("/users")
     @RequirePermission("user:read")
-    public Result<List<AccountDtos.AccountRow>> accounts() {
-        return Result.ok(roleService.accounts());
+    public Result<List<AccountDtos.AccountRow>> accounts(
+            @RequestParam(value = "keyword", required = false) String keyword) {
+        return Result.ok(roleService.accounts(keyword));
     }
 
     @PostMapping("/users")

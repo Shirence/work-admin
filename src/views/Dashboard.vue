@@ -57,11 +57,9 @@ import { getDashboardStats } from '../api/dashboard'
 
 const EMPTY_STATS = {
   userCount: 0,
-  accountCount: 0,
-  conversationCount: 0,
+  groupCount: 0,
   messageCount: 0,
-  deviceCount: 0,
-  activeDeviceCount: 0,
+  memberCount: 0,
   dailyMessages: [],
   roleDistribution: [],
   fetchedAt: null
@@ -86,10 +84,10 @@ export default {
     },
     statCards() {
       return [
-        { code: 'USR.ACCOUNTS', label: '账号总数', value: this.stats.accountCount || 0, icon: 'UserFilled', color: 'var(--accent)' },
-        { code: 'CHAT.ROOMS', label: '会话总数', value: this.stats.conversationCount || 0, icon: 'ChatDotRound', color: 'var(--ice)' },
+        { code: 'USR.TOTAL', label: '用户总数', value: this.stats.userCount || 0, icon: 'UserFilled', color: 'var(--accent)' },
+        { code: 'CHAT.GROUP', label: '群组总数', value: this.stats.groupCount || 0, icon: 'ChatDotRound', color: 'var(--ice)' },
         { code: 'CHAT.MSG', label: '消息总数', value: this.stats.messageCount || 0, icon: 'Bell', color: 'var(--violet)' },
-        { code: 'DEV.ACTIVE', label: '活跃设备', value: this.stats.activeDeviceCount || 0, icon: 'DataLine', color: 'var(--warn)' }
+        { code: 'CHAT.MEMBER', label: '群成员数', value: this.stats.memberCount || 0, icon: 'DataLine', color: 'var(--warn)' }
       ]
     },
     updatedLabel() {

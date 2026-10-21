@@ -7,7 +7,6 @@ import com.example.workadmin.entity.ChatConversation;
 import com.example.workadmin.entity.ChatDevice;
 import com.example.workadmin.entity.ChatMember;
 import com.example.workadmin.entity.ChatReadCursor;
-import com.example.workadmin.repository.AccountRepository;
 import com.example.workadmin.repository.ChatConversationRepository;
 import com.example.workadmin.repository.ChatDeviceLinkRepository;
 import com.example.workadmin.repository.ChatMemberRepository;
@@ -39,7 +38,7 @@ public class ChatConversationService {
     private final ChatMemberRepository memberRepository;
     private final ChatReadCursorRepository readCursorRepository;
     private final ChatDeviceLinkRepository deviceLinkRepository;
-    private final AccountRepository accountRepository;
+    private final StuStore store;
     private final ChatDeviceService deviceService;
     private final ChatGroupPolicyService groupPolicyService;
 
@@ -47,14 +46,14 @@ public class ChatConversationService {
                                    ChatMemberRepository memberRepository,
                                    ChatReadCursorRepository readCursorRepository,
                                    ChatDeviceLinkRepository deviceLinkRepository,
-                                   AccountRepository accountRepository,
+                                   StuStore store,
                                    ChatDeviceService deviceService,
                                    ChatGroupPolicyService groupPolicyService) {
         this.conversationRepository = conversationRepository;
         this.memberRepository = memberRepository;
         this.readCursorRepository = readCursorRepository;
         this.deviceLinkRepository = deviceLinkRepository;
-        this.accountRepository = accountRepository;
+        this.store = store;
         this.deviceService = deviceService;
         this.groupPolicyService = groupPolicyService;
     }
@@ -68,7 +67,7 @@ public class ChatConversationService {
         if (target.equals(username)) {
             throw new BizException(400, "不能与自己创建私聊");
         }
-        if (!accountRepository.existsByUsername(target)) {
+        if (!store.accountExists(target)) {
             throw new BizException(404, "账号不存在：" + target);
         }
 
@@ -121,7 +120,7 @@ public class ChatConversationService {
             throw new BizException(400, "群成员数量不能超过 " + ChatConstants.MAX_GROUP_MEMBERS);
         }
         for (String member : members) {
-            if (!accountRepository.existsByUsername(member)) {
+            if (!store.accountExists(member)) {
                 throw new BizException(404, "账号不存在：" + member);
             }
         }
@@ -220,7 +219,7 @@ public class ChatConversationService {
         }
         LocalDateTime now = LocalDateTime.now();
         for (String target : targets) {
-            if (!accountRepository.existsByUsername(target)) {
+            if (!store.accountExists(target)) {
                 throw new BizException(404, "账号不存在：" + target);
             }
             if (!memberRepository.existsByConversationIdAndUsername(conversationId, target)) {

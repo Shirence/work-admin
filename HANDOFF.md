@@ -69,7 +69,7 @@ npm run serve
 | 构建 | Vue CLI 5（webpack 5）+ Babel |
 | 后端 | Spring Boot 3.5.16 + Spring Web + Spring Data JPA + Bean Validation |
 | 数据库 | 远程 MySQL 8.0（`118.25.25.164:3306/demo`，账号 `stu`）；本项目表带 `wa_` 前缀，与同库其他项目隔离 |
-| 密码 | `spring-security-crypto` 的 BCrypt（**不引完整 Spring Security**） |
+| 密码 | 与 stu 完全一致的三重 MD5（`md5(md5(md5(pwd)))`），登录兼容历史单次 MD5 |
 | JDK / Maven | JDK 17+（本机用 jdk-22）；Maven 3.9.16 |
 
 ---
@@ -166,7 +166,6 @@ com.example.workadmin
 ├── config/
 │   ├── WebConfig.java              # 注册拦截器 + CORS
 │   ├── AuthInterceptor.java        # 校验请求头 token
-│   ├── PasswordConfig.java         # 提供 BCryptPasswordEncoder Bean
 │   └── DataInitializer.java        # 启动时种 demo 数据
 ├── controller/
 │   ├── AuthController.java         # /api/login /register /logout /me /health
@@ -180,13 +179,13 @@ com.example.workadmin
 │   ├── DashboardStats.java         # 用户/会话/消息/设备/近 6 日趋势
 │   └── RegisterRequest.java        # 注册入参（含 confirmPassword）
 ├── entity/
-│   ├── Account.java                # 登录账号表 sys_account（密码 BCrypt）
+│   ├── Account.java                # 登录用户值对象（数据来自 stu 的 user 表，非 JPA 实体）
 │   └── User.java                   # 业务用户表 sys_user
 ├── repository/
 │   ├── AccountRepository.java
 │   └── UserRepository.java
 └── service/
-    ├── AuthService.java            # 登录/注册（查库 + BCrypt）
+    ├── AuthService.java            # 登录/注册（user 表 + 三重 MD5）
     ├── DashboardService.java       # 仪表盘统计（MySQL 真实计数，无数据返回 0）
     ├── TokenStore.java             # 内存 token（ConcurrentHashMap）
     └── UserService.java            # 用户 CRUD
@@ -218,7 +217,7 @@ com.example.workadmin
 
 ### 5.4 认证流程
 
-1. `POST /api/login` → `AuthService` 查 `sys_account`，`BCryptPasswordEncoder.matches()` 校验
+1. `POST /api/login` → `AuthService` 查 stu 的 `user` 表，`StuPassword.matches()`（三重 MD5）校验
 2. 通过则 `TokenStore.create()` 生成 **32 位 UUID**（去掉横线），存内存
 3. 前端存 `localStorage.token` + `userInfo`（Vuex 双写）
 4. 每个请求由 axios 请求拦截器写入 `token` 请求头
@@ -230,12 +229,14 @@ com.example.workadmin
 - 主库：**远程 MySQL** `118.25.25.164:3306/demo`，账号 `stu`
 - 凭据放 `server/application-local.yml`（已 gitignore，模板 `server/application-local.yml.example`），
   也可用 `DB_URL` / `DB_USERNAME` / `DB_PASSWORD` 环境变量覆盖
-- 本项目所有表统一 **`wa_` 前缀**（`wa_sys_account`、`wa_chat_message` …），
-  与同库里 stu 项目的 `sys_role` / `chat_message` / `user` 等表完全隔离
+- 账号/角色/菜单直接用 stu 的真实表（`user`、`sys_role`、`sys_user_role`、`sys_menu`、`sys_role_menu`），
+  由 `StuStore` 用显式 SQL 读写，不挂 JPA 实体；
+- 中台只剩 E2EE 相关表带 **`wa_` 前缀**（`wa_chat_message`、`wa_chat_device` …）；
+  旧的 `wa_sys_account` / `wa_sys_role` / `wa_sys_menu` / `wa_sys_user` 已停用（表还在库里，无 DROP 权限）
 - H2 只用于集成测试（`test` scope 依赖 + 内存库 `jdbc:h2:mem:chat-test`），运行期不加载
 - `spring.jpa.hibernate.ddl-auto=update`，首次连空库自动建 16 张 `wa_*` 表
 - `wa_sys_user` 种子：张三、李四
-- `wa_sys_account` 种子：admin / manager / viewer，密码 BCrypt("123456")
+- 不再种子任何账号：登录直接用 stu 已有用户，`admin` 的密码就是 123456
 
 ### 5.6 注册校验规则（前后端一致）
 
@@ -248,7 +249,7 @@ com.example.workadmin
 
 ### 5.7 安全边界（务必告知用户）
 
-- ✅ 密码 BCrypt 哈希，库里无明文
+- ✅ 密码三重 MD5，库里无明文（与 stu 同一套算法）
 - ❌ token 存内存、无过期/刷新机制
 - ❌ 无验证码、无邮箱激活、无找回密码
 - ❌ **没有接口级角色鉴权**（只校验「有没有登录」；聊天管理员接口除外），前端 `v-if` 按钮权限只是 UI
@@ -274,8 +275,9 @@ com.example.workadmin
 
 ### 5.9 RBAC：角色、菜单、按钮权限
 
-- 表：`sys_role`、`sys_menu`、`sys_role_menu`；`sys_account.role_id` 指向 `sys_role`。
-- 权限点来自 `sys_menu.permission`，不写死在代码里；`admin` 额外拥有 `*`。
+- 表：`sys_role`、`sys_user_role`、`sys_menu`、`sys_role_menu`（全部属于 stu）。
+- 权限点来自 `sys_menu.permission`，不写死在代码里；`super_admin` 约定拥有 `*`，
+  其他角色按 `sys_role_menu` 逐条授权，所有登录用户另有基础权限 `dashboard:view`。
 - 接口：
   - `GET /api/auth/access` → `{role, permissions, menus}`
   - `GET /api/users` + `POST/PUT/DELETE /api/users`（本地登录账号 CRUD）
@@ -496,7 +498,7 @@ npx serve -s dist           # 本地预览 dist（-s 必须有，history 模式�
 | **F12 → Network → Fetch/XHR** | 能看到 `POST /api/login`、`GET /api/user/list` 等真实请求（Mock 模式下看不到） |
 | **`localStorage.token`** | 真实后端：32 位十六进制；Mock：`admin-demo-token` 这种 |
 | **停掉后端再操作** | 前端报「获取列表失败」/ 500，说明确实依赖后端 |
-| **MySQL 直查** | 连 `118.25.25.164/demo` 查 `wa_sys_account` / `wa_chat_message`，能看到接口写入的数据 |
+| **MySQL 直查** | 连 `118.25.25.164/demo` 查 `user`（27 条）/ `sys_role` / `chat_message`，能看到接口写入的数据 |
 | **重启后端** | 数据在 MySQL 里，重启后端不会复位 |
 | **本地 E2EE 消息** | 登录后进入 `/chat`，首次会生成设备密钥；发送消息后 Network 里 `/api/chat/messages` 的 envelopes 是密文，接收端能显示明文即说明 libsignal 链路生效 |
 | **双主题** | 右上角 `LIGHT / DARK` 切换，刷新后保持；Dashboard 图表、Element Plus 表格/弹窗颜色一起变化 |
@@ -560,7 +562,7 @@ a98e0d5  feat: unify local and remote account management   ← HEAD
 - [ ] **验证码**（图形/滑块）防脚本注册
 - [ ] **邮箱激活**流程
 - [ ] **换 MySQL**：加 `mysql-connector-j` + 改 `application.yml` 即可（JPA 自动建表）
-- [ ] **注册后自动建业务用户**（目前 `sys_account` 和 `sys_user` 两张表独立）
+- [x] 注册与登录共用 stu 的 `user` 表（不再有本地账号表）
 - [ ] **Three.js 3D 背景**（手册第三层升级；当前用 Canvas 2D 粒子替代）
 - [ ] **命令面板 Cmd+K**（手册第四层提到的 command palette）
 - [ ] **统一 Toast / Modal 封装 + 骨架屏**

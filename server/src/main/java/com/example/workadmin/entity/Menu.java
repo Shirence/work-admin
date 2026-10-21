@@ -1,45 +1,27 @@
 package com.example.workadmin.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
 
 /**
  * 菜单 / 页面 / 按钮权限。type = DIRECTORY / MENU / BUTTON。
  */
-@Entity
-@Table(name = "wa_sys_menu")
 public class Menu {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "parent_id")
     private Long parentId;
 
-    @Column(nullable = false, length = 100)
     private String name;
 
-    @Column(nullable = false, length = 20)
     private String type;
 
-    @Column(length = 200)
     private String path;
 
-    @Column(length = 100)
     private String permission;
 
-    @Column(name = "sort_order", nullable = false)
     private Integer sortOrder = 0;
 
-    @Column(nullable = false)
     private Boolean enabled = true;
 
-    @Column(nullable = false)
     private Boolean builtin = false;
 
     public Long getId() {

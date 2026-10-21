@@ -7,7 +7,6 @@ import com.example.workadmin.entity.ChatDevice;
 import com.example.workadmin.entity.ChatDeviceGrant;
 import com.example.workadmin.entity.ChatDeviceLink;
 import com.example.workadmin.entity.ChatOneTimePreKey;
-import com.example.workadmin.repository.AccountRepository;
 import com.example.workadmin.repository.ChatDeviceGrantRepository;
 import com.example.workadmin.repository.ChatDeviceLinkRepository;
 import com.example.workadmin.repository.ChatDeviceRepository;
@@ -36,18 +35,18 @@ public class ChatDeviceService {
     private final ChatOneTimePreKeyRepository preKeyRepository;
     private final ChatDeviceLinkRepository linkRepository;
     private final ChatDeviceGrantRepository grantRepository;
-    private final AccountRepository accountRepository;
+    private final StuStore store;
 
     public ChatDeviceService(ChatDeviceRepository deviceRepository,
                              ChatOneTimePreKeyRepository preKeyRepository,
                              ChatDeviceLinkRepository linkRepository,
                              ChatDeviceGrantRepository grantRepository,
-                             AccountRepository accountRepository) {
+                             StuStore store) {
         this.deviceRepository = deviceRepository;
         this.preKeyRepository = preKeyRepository;
         this.linkRepository = linkRepository;
         this.grantRepository = grantRepository;
-        this.accountRepository = accountRepository;
+        this.store = store;
     }
 
     /**
@@ -288,7 +287,7 @@ public class ChatDeviceService {
      */
     @Transactional
     public List<DeviceDtos.DeviceBundleDto> bundlesFor(String username) {
-        if (!accountRepository.existsByUsername(username)) {
+        if (!store.accountExists(username)) {
             throw new BizException(404, "账号不存在：" + username);
         }
         List<ChatDevice> devices = deviceRepository
@@ -335,7 +334,7 @@ public class ChatDeviceService {
      */
     @Transactional
     public void adminReset(String username) {
-        if (!accountRepository.existsByUsername(username)) {
+        if (!store.accountExists(username)) {
             throw new BizException(404, "账号不存在：" + username);
         }
         grantRepository.deleteByUsername(username);

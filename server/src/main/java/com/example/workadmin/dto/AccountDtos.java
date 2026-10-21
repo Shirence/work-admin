@@ -5,12 +5,12 @@ public final class AccountDtos {
     private AccountDtos() {
     }
 
-    public record AccountRow(Long id, String username, String email, Long roleId,
-                             String roleName, String roleCode, Boolean enabled) {
+    /** 一行真实用户：姓名、账号来自 stu 的 `user` 表，角色来自 sys_role。 */
+    public record AccountRow(Long id, String name, String account, Long roleId,
+                             String roleName, String roleCode) {
     }
 
-    public record AccountRequest(String username, String email, String password,
-                                 Long roleId, Boolean enabled) {
+    public record AccountRequest(String name, String account, String password, Long roleId) {
     }
 
     public record RoleBindRequest(Long roleId) {
