@@ -21,3 +21,6 @@ server/application-local.yml
 
 # 界面截图（本地预览用）
 screenshots/
+
+# 工具本地状态（记忆、会话数据等）
+.workbuddy/
