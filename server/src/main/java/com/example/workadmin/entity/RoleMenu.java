@@ -12,7 +12,7 @@ import jakarta.persistence.UniqueConstraint;
  * 角色-菜单授权关系。
  */
 @Entity
-@Table(name = "sys_role_menu", uniqueConstraints = @UniqueConstraint(columnNames = {"role_id", "menu_id"}))
+@Table(name = "wa_sys_role_menu", uniqueConstraints = @UniqueConstraint(columnNames = {"role_id", "menu_id"}))
 public class RoleMenu {
 
     @Id

@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
  * 会话成员。role 为 OWNER / MEMBER。
  */
 @Entity
-@Table(name = "chat_member",
+@Table(name = "wa_chat_member",
         uniqueConstraints = {
                 @UniqueConstraint(name = "uk_chat_member", columnNames = {"conversation_id", "username"})
         },

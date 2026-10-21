@@ -12,7 +12,7 @@ import jakarta.persistence.Table;
  * 注意：登录演示账号与这里的业务用户是分开的，见 AuthService。
  */
 @Entity
-@Table(name = "sys_user")
+@Table(name = "wa_sys_user")
 public class User {
 
     @Id

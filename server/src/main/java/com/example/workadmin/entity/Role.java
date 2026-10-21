@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
  * 角色表。内置角色不可删除，编码不可修改。
  */
 @Entity
-@Table(name = "sys_role")
+@Table(name = "wa_sys_role")
 public class Role {
 
     @Id

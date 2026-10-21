@@ -11,7 +11,7 @@ import jakarta.persistence.Table;
  * 菜单 / 页面 / 按钮权限。type = DIRECTORY / MENU / BUTTON。
  */
 @Entity
-@Table(name = "sys_menu")
+@Table(name = "wa_sys_menu")
 public class Menu {
 
     @Id

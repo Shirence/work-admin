@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
  * 只有管理员能修改。
  */
 @Entity
-@Table(name = "chat_account_group_permission",
+@Table(name = "wa_chat_account_group_permission",
         uniqueConstraints = {
                 @UniqueConstraint(name = "uk_chat_group_perm_user", columnNames = {"username"})
         })

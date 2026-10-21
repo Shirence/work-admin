@@ -7,13 +7,13 @@
 
 ### 1. 用户与账号管理
 
-- 登录账号统一在「用户管理」页管理本地 H2 `sys_account`：
+- 登录账号统一在「用户管理」页管理 MySQL 里的 `wa_sys_account`：
   - 支持新增、编辑、改密、启用/停用、绑定角色、删除；
   - `GET/POST /api/users`、`PUT/DELETE /api/users/{id}`、`PUT /api/users/{id}/role`。
 - 业务用户 `sys_user` 的旧前端表格已移除，避免和登录账号管理重复；后端旧接口保留但不在导航中使用。
 - 仪表盘「账号总数」「角色分布」使用真实 `sys_account` 数据。
 - 早期引入的外部 MySQL 租户账号与远程群聊已整体下线（含 `remote-admin` / `remote-auth` / `remote-chat`
-  接口与三个远程页面），项目只依赖本地 H2；启动时会自动清理遗留的 `remote:*` 权限节点。
+  接口与三个远程页面），项目只依赖远程 MySQL（`demo` 库、`wa_` 前缀表）；启动时会自动清理遗留的 `remote:*` 权限节点。
 
 ### 2. 权限 / 注册 / 角色绑定
 

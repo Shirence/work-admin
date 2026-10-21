@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
  * 私钥只在设备本地保存；服务端在分发密钥包时原子地消费一条。
  */
 @Entity
-@Table(name = "chat_one_time_pre_key",
+@Table(name = "wa_chat_one_time_pre_key",
         uniqueConstraints = {
                 @UniqueConstraint(name = "uk_chat_otpk", columnNames = {"username", "device_id", "key_id"})
         },

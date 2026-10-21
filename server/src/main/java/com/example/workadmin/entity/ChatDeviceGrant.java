@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
  * 或历史消息重加密包。新设备在设备被批准后拉取并消费。</p>
  */
 @Entity
-@Table(name = "chat_device_grant",
+@Table(name = "wa_chat_device_grant",
         indexes = {
                 @Index(name = "idx_chat_device_grant_target", columnList = "to_device_key,consumed_flag"),
                 @Index(name = "idx_chat_device_grant_link", columnList = "link_id")

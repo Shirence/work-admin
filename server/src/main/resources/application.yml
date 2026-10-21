@@ -8,21 +8,32 @@ server:
 spring:
   application:
     name: work-admin-server
+  config:
+    # 数据库凭据不提交到 git：放在 server/application-local.yml（模板见 application-local.yml.example）
+    import:
+      - optional:file:./application-local.yml
+      - optional:file:./server/application-local.yml
   datasource:
-    # 文件持久化：数据保存在 server/data/workadmin.mv.db，重启后端不再复位
-    url: jdbc:h2:file:./data/workadmin;DB_CLOSE_ON_EXIT=FALSE;DB_CLOSE_DELAY=-1
-    driver-class-name: org.h2.Driver
-    username: sa
-    password: ""
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
+    # 主库：远程 MySQL（demo 库）。本项目的表统一带 wa_ 前缀，不会和同库其他项目冲突。
+    url: ${DB_URL:jdbc:mysql://118.25.25.164:3306/demo?useUnicode=true&characterEncoding=UTF-8&useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=Asia/Shanghai&connectTimeout=8000&socketTimeout=20000}
+    username: ${DB_USERNAME:stu}
+    password: ${DB_PASSWORD:}
+    hikari:
+      pool-name: workadmin-pool
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 10000
+      connection-test-query: SELECT 1
   jpa:
     hibernate:
+      # 首次运行自动建表；生产建议改为 validate 并用 SQL 脚本管理
       ddl-auto: update
     open-in-view: false
     show-sql: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: Asia/Shanghai
 
 logging:
   level:

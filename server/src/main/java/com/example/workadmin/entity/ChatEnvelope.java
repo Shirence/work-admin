@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
  * WhisperMessage / PreKeyWhisperMessage 类型。</p>
  */
 @Entity
-@Table(name = "chat_envelope",
+@Table(name = "wa_chat_envelope",
         uniqueConstraints = {
                 @UniqueConstraint(name = "uk_chat_envelope_device", columnNames = {"message_id", "target_device_key"})
         },

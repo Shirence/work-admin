@@ -16,25 +16,26 @@
 
 ## 2. 持久化
 
-- H2 文件库：`jdbc:h2:file:./data/workadmin`，实际文件 `server/data/workadmin.mv.db`。
-- 重启后账号、设备、会话、消息、已读游标均保留；已实测重启后设备仍存在。
-- 控制台：<http://localhost:8081/h2-console>（JDBC URL 同上，用户 `sa`，空密码）。
+- 主库：远程 MySQL `118.25.25.164:3306/demo`（账号 `stu`），凭据在 `server/application-local.yml`（已 gitignore）。
+- 本项目所有表统一加 `wa_` 前缀（如 `wa_chat_message`、`wa_sys_account`），
+  与同库中 stu 项目的 `sys_role` / `chat_message` 等表完全隔离，互不影响。
+- 数据库驱动：`mysql-connector-j`；H2 只保留为集成测试用的内存库（`test` scope）。
 - `spring.jpa.hibernate.ddl-auto=update`，表由 JPA 自动创建。
-- `server/data/*.mv.db` 已加入 `.gitignore`。
+- 没有可视控制台；用任意 MySQL 客户端或 `information_schema` 查 `wa_*` 表。
 
-主要表：
+主要表（实际表名均带 `wa_` 前缀）：
 
 | 表 | 作用 |
 |---|---|
-| `chat_device` | 设备身份/签名公钥/状态（PENDING/ACTIVE/REVOKED） |
-| `chat_one_time_pre_key` | X3DH 一次性预共享公钥，分发一次即消费 |
-| `chat_device_link` | 新设备授权申请 |
-| `chat_device_grant` | 旧设备给新设备的加密历史授权（服务端仅存密文） |
-| `chat_conversation` | 私聊/群聊、群版本号 `version`、`last_message_seq` |
-| `chat_member` | 成员与账号级已读游标 |
-| `chat_read_cursor` | 每设备已读游标 |
-| `chat_message` | 消息元数据与 `serverSeq` |
-| `chat_envelope` | 逐设备密文信封 |
+| `wa_chat_device` | 设备身份/签名公钥/状态（PENDING/ACTIVE/REVOKED） |
+| `wa_chat_one_time_pre_key` | X3DH 一次性预共享公钥，分发一次即消费 |
+| `wa_chat_device_link` | 新设备授权申请 |
+| `wa_chat_device_grant` | 旧设备给新设备的加密历史授权（服务端仅存密文） |
+| `wa_chat_conversation` | 私聊/群聊、群版本号 `version`、`last_message_seq` |
+| `wa_chat_member` | 成员与账号级已读游标 |
+| `wa_chat_read_cursor` | 每设备已读游标 |
+| `wa_chat_message` | 消息元数据与 `serverSeq` |
+| `wa_chat_envelope` | 逐设备密文信封 |
 | `chat_group_policy` | 全局建群策略（单行） |
 | `chat_account_group_permission` | 账号级建群覆盖 |
 
@@ -182,7 +183,7 @@ java -jar target\work-admin-server-1.0.0.jar
 - 多设备：第二台设备注册后 PENDING，现有设备在「设备」对话框批准；
   新设备只能解密批准后发给它的消息。
 - 构建注意：`vue.config.js` 对 libsignal 的 curve25519 wasm 包设置 `resolve.fallback.fs=false`。
-- 消息全部落在本地 H2，服务端只存逐设备密文。
+- 消息全部落在 MySQL，服务端只存逐设备密文。
 
 已实测：Node 端两个真实 libsignal 设备通过该后端完成
 `PreKeyWhisperMessage` 发送 → 对方解密 → `WhisperMessage` 回复 → 原设备解密。

@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
  * <p>定序键：(conversationId, serverSeq)，由服务端在会话行锁内单调分配。</p>
  */
 @Entity
-@Table(name = "chat_message",
+@Table(name = "wa_chat_message",
         uniqueConstraints = {
                 @UniqueConstraint(name = "uk_chat_msg_client",
                         columnNames = {"conversation_id", "sender_username", "sender_client_device_key", "client_message_id"}),

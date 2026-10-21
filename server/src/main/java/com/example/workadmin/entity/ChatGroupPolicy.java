@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
  * </ul>
  */
 @Entity
-@Table(name = "chat_group_policy")
+@Table(name = "wa_chat_group_policy")
 public class ChatGroupPolicy {
 
     @Id

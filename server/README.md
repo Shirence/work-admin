@@ -3,7 +3,7 @@
 [`work-admin`](..) 工作管理中台的后端 API，位于 `work-admin/server/`。
 
 - Spring Boot 3.5.16 + Spring Web + Spring Data JPA + Bean Validation
-- H2 内存数据库（零安装，重启复位）
+- 远程 MySQL 8.0（本项目表带 `wa_` 前缀，与同库其他项目隔离）
 - 统一响应体 `{ code, msg, data }`，与前端 axios 拦截器约定一致
 - 请求头 `token` 鉴权（内存 token）
 
@@ -66,7 +66,7 @@ work-admin-server/
     │       ├── AuthService.java             # 演示账号 + 权限
     │       ├── TokenStore.java              # 内存 token
     │       └── UserService.java             # 用户 CRUD
-    └── resources/application.yml            # 端口 8081 / H2 / JPA
+    └── resources/application.yml            # 端口 8081 / MySQL 数据源 / JPA
 ```
 
 ---
@@ -157,13 +157,15 @@ curl -s http://localhost:8081/api/user/list -H "token: $TOKEN"
 
 ## 六、数据库
 
-默认 H2 内存库，重启后复位（回到初始的张三、李四）。
+主库是远程 MySQL：`118.25.25.164:3306/demo`，账号 `stu`。
 
-- H2 控制台：http://localhost:8081/h2-console
-- JDBC URL：`jdbc:h2:mem:workadmin`
-- 用户名 `sa`，密码留空
-
-换 MySQL：在 `pom.xml` 加 `mysql-connector-j`，改 `application.yml` 的 `spring.datasource.*`，JPA 会自动建表。
+- 凭据放 `server/application-local.yml`（已 gitignore），模板见 `server/application-local.yml.example`；
+  也可用环境变量 `DB_URL` / `DB_USERNAME` / `DB_PASSWORD` 覆盖。
+- 本项目所有表统一 `wa_` 前缀：`wa_sys_account`、`wa_sys_role`、`wa_sys_menu`、`wa_chat_message` …
+  同库里 stu 项目的 `sys_role` / `chat_message` / `user` 表不受影响。
+- `spring.jpa.hibernate.ddl-auto=update`，连上空库首次启动会自动建 16 张 `wa_*` 表，
+  并种入 admin / manager / viewer（密码 123456）。
+- H2 只作为集成测试的内存库（`test` scope），运行期不加载。
 
 ---
 

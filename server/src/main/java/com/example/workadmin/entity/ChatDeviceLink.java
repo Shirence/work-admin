@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
  * 新设备解密后才能读取加入前的旧消息。</p>
  */
 @Entity
-@Table(name = "chat_device_link",
+@Table(name = "wa_chat_device_link",
         uniqueConstraints = {
                 @UniqueConstraint(name = "uk_chat_device_link", columnNames = {"username", "new_device_key"})
         },

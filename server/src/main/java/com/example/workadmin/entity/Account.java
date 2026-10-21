@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
  * 密码只存 BCrypt 哈希，永不存明文。
  */
 @Entity
-@Table(name = "sys_account")
+@Table(name = "wa_sys_account")
 public class Account {
 
     @Id

@@ -68,7 +68,7 @@ npm run serve
 | Mock | MockJS（可通过开关关闭） |
 | 构建 | Vue CLI 5（webpack 5）+ Babel |
 | 后端 | Spring Boot 3.5.16 + Spring Web + Spring Data JPA + Bean Validation |
-| 数据库 | H2 文件库（`jdbc:h2:file:./data/workadmin`，文件在 `server/data/workadmin.mv.db`） |
+| 数据库 | 远程 MySQL 8.0（`118.25.25.164:3306/demo`，账号 `stu`）；本项目表带 `wa_` 前缀，与同库其他项目隔离 |
 | 密码 | `spring-security-crypto` 的 BCrypt（**不引完整 Spring Security**） |
 | JDK / Maven | JDK 17+（本机用 jdk-22）；Maven 3.9.16 |
 
@@ -187,7 +187,7 @@ com.example.workadmin
 │   └── UserRepository.java
 └── service/
     ├── AuthService.java            # 登录/注册（查库 + BCrypt）
-    ├── DashboardService.java       # 仪表盘统计（H2 真实计数，无数据返回 0）
+    ├── DashboardService.java       # 仪表盘统计（MySQL 真实计数，无数据返回 0）
     ├── TokenStore.java             # 内存 token（ConcurrentHashMap）
     └── UserService.java            # 用户 CRUD
 ```
@@ -227,13 +227,15 @@ com.example.workadmin
 
 ### 5.5 数据库
 
-- H2 **文件库**，重启后端数据保留
-- `jdbc:h2:file:./data/workadmin;DB_CLOSE_ON_EXIT=FALSE;DB_CLOSE_DELAY=-1`
-- 数据库文件：`server/data/workadmin.mv.db`（已加入 `.gitignore`）
-- 用户 `sa`，密码空
-- H2 控制台：<http://localhost:8081/h2-console>
-- `sys_user` 种子：张三(admin)、李四(user)
-- `sys_account` 种子：admin / manager / viewer，密码 BCrypt("123456")
+- 主库：**远程 MySQL** `118.25.25.164:3306/demo`，账号 `stu`
+- 凭据放 `server/application-local.yml`（已 gitignore，模板 `server/application-local.yml.example`），
+  也可用 `DB_URL` / `DB_USERNAME` / `DB_PASSWORD` 环境变量覆盖
+- 本项目所有表统一 **`wa_` 前缀**（`wa_sys_account`、`wa_chat_message` …），
+  与同库里 stu 项目的 `sys_role` / `chat_message` / `user` 等表完全隔离
+- H2 只用于集成测试（`test` scope 依赖 + 内存库 `jdbc:h2:mem:chat-test`），运行期不加载
+- `spring.jpa.hibernate.ddl-auto=update`，首次连空库自动建 16 张 `wa_*` 表
+- `wa_sys_user` 种子：张三、李四
+- `wa_sys_account` 种子：admin / manager / viewer，密码 BCrypt("123456")
 
 ### 5.6 注册校验规则（前后端一致）
 
@@ -268,7 +270,7 @@ com.example.workadmin
 - 新设备：第二台设备注册后为 PENDING，现有设备在「设备」对话框批准后激活；
   批准前无法同步，批准后只能解密之后发给它的消息（旧消息需额外历史密钥授权）。
 - Vue 构建：`vue.config.js` 里给 libsignal 的 curve25519 wasm 包设置 `resolve.fallback.fs=false`。
-- 消息只落在本地 H2，服务端只存逐设备密文。
+- 消息只落在 MySQL，服务端只存逐设备密文。
 
 ### 5.9 RBAC：角色、菜单、按钮权限
 
@@ -494,8 +496,8 @@ npx serve -s dist           # 本地预览 dist（-s 必须有，history 模式�
 | **F12 → Network → Fetch/XHR** | 能看到 `POST /api/login`、`GET /api/user/list` 等真实请求（Mock 模式下看不到） |
 | **`localStorage.token`** | 真实后端：32 位十六进制；Mock：`admin-demo-token` 这种 |
 | **停掉后端再操作** | 前端报「获取列表失败」/ 500，说明确实依赖后端 |
-| **H2 控制台** | `http://localhost:8081/h2-console` 能看到 `sys_user` / `sys_account` 及聊天表 |
-| **重启后端** | H2 文件库数据保留（不再是内存库） |
+| **MySQL 直查** | 连 `118.25.25.164/demo` 查 `wa_sys_account` / `wa_chat_message`，能看到接口写入的数据 |
+| **重启后端** | 数据在 MySQL 里，重启后端不会复位 |
 | **本地 E2EE 消息** | 登录后进入 `/chat`，首次会生成设备密钥；发送消息后 Network 里 `/api/chat/messages` 的 envelopes 是密文，接收端能显示明文即说明 libsignal 链路生效 |
 | **双主题** | 右上角 `LIGHT / DARK` 切换，刷新后保持；Dashboard 图表、Element Plus 表格/弹窗颜色一起变化 |
 | **curl 直连** | `Invoke-RestMethod http://localhost:8081/api/health` |
@@ -512,7 +514,7 @@ npx serve -s dist           # 本地预览 dist（-s 必须有，history 模式�
 3. **仪表盘全部接真实统计**：`GET /api/dashboard/stats` 返回用户/会话/消息/设备/近 6 日消息量。
 4. **迁移项目**：`D:\Downloads\work-admin` → `E:\my-project\work-admin`。
 5. **切换 history 路由**：`createWebHistory` + `deploy/nginx.conf` 的 `try_files`。
-6. **新增 Spring Boot 后端**：`server/`，Spring Boot 3.5.16 + JPA + H2，接口对齐前端契约。
+6. **新增 Spring Boot 后端**：`server/`，Spring Boot 3.5.16 + JPA，接口对齐前端契约。
 7. **前端接入后端**：`src/api/request.js` 拦截器、`VUE_APP_USE_MOCK` 开关、`build:mock`。
 8. **设计系统四轮迭代**：数据来源标注移除 → 科技终端风 → 高级白色设计系统 → 深空工业 HUD 双主题。
 9. **新增注册功能**：`sys_account` 表、BCrypt、`POST /api/register`、`/register` 页面。

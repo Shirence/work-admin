@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
  * </ul>
  */
 @Entity
-@Table(name = "chat_device",
+@Table(name = "wa_chat_device",
         uniqueConstraints = {
                 @UniqueConstraint(name = "uk_chat_device_client", columnNames = {"username", "client_device_key"}),
                 @UniqueConstraint(name = "uk_chat_device_id", columnNames = {"username", "device_id"})

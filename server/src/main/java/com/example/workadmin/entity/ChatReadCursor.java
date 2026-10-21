@@ -9,7 +9,7 @@ import java.time.LocalDateTime;
  * ChatMember.lastReadSeq 保存账号级最大值，便于未读数快速聚合。
  */
 @Entity
-@Table(name = "chat_read_cursor",
+@Table(name = "wa_chat_read_cursor",
         uniqueConstraints = {
                 @UniqueConstraint(name = "uk_chat_read_cursor", columnNames = {"conversation_id", "device_key"})
         },

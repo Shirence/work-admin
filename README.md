@@ -2,7 +2,7 @@
 
 Vue 3（选项式 API，纯 JavaScript）+ Element Plus + Vuex + Vue Router + Axios。
 
-配套后端：[`server`](./server)（Spring Boot 3.5 + Spring Data JPA + H2）。
+配套后端：[`server`](./server)（Spring Boot 3.5 + Spring Data JPA + 远程 MySQL）。
 
 > 前端按《Vue 3 + Element Plus 工作管理中台：项目实战课》第 0 ~ 10 课完成，
 > 之后扩展了「第 11 课」：接入 Spring Boot 真实后端；MockJS 保留为可切换的离线模式。
@@ -13,7 +13,7 @@ Vue 3（选项式 API，纯 JavaScript）+ Element Plus + Vuex + Vue Router + Ax
 
 | 模式 | 怎么启动 | 需要后端 | 数据存放 |
 |---|---|---|---|
-| **联调模式（默认）** | `npm run serve` + 启动 server/ 后端 | 是 | H2 数据库，重启后端后复位 |
+| **联调模式（默认）** | `npm run serve` + 启动 server/ 后端 | 是 | 远程 MySQL（本项目表带 `wa_` 前缀） |
 | **离线 Mock** | `VUE_APP_USE_MOCK=true`，或 `npm run build:mock` | 否 | 浏览器内存，刷新复位 |
 
 ### 1. 联调模式（推荐）
@@ -180,4 +180,4 @@ npm run build:mock   # 产物 dist/，自带 Mock，可离线运行
 - 前端按钮权限（`v-if="can('user:edit')"`）只隐藏 UI，**不构成安全边界**。
   当前教学版后端只校验「有没有登录」，没有做接口级角色鉴权，详见后端 README 的安全边界一节。
 - `VUE_APP_` 开头的环境变量会在构建时写进包里，**不能放密钥**。
-- 联调模式下数据存在 H2 内存库，后端重启会复位成初始的张三、李四。
+- 联调模式下数据存在远程 MySQL（`demo` 库的 `wa_*` 表），后端重启不会复位。

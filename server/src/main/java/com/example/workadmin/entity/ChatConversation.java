@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
  * serverSeq 表示，两者互不替代。</p>
  */
 @Entity
-@Table(name = "chat_conversation",
+@Table(name = "wa_chat_conversation",
         uniqueConstraints = {
                 @UniqueConstraint(name = "uk_chat_conversation_private", columnNames = {"private_key"})
         },
