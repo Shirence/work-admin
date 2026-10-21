@@ -57,6 +57,11 @@ const routes = [
         meta: { title: '无权访问' }
       }
     ]
+  },
+  // 兜底：未知路径不留在空白页，回到仪表盘（未登录时守卫会再转到 /login）
+  {
+    path: '/:pathMatch(.*)*',
+    redirect: '/dashboard'
   }
 ]
 

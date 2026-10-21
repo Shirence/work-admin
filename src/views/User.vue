@@ -12,7 +12,7 @@
       <div class="toolbar">
         <div>
           <h3>登录账号</h3>
-          <p class="u-hint">sys_account · 角色来自本地 RBAC</p>
+          <p class="u-hint">wa_sys_account · 角色来自 MySQL RBAC</p>
         </div>
         <div class="toolbar-right">
           <el-button v-if="can('user:create')" type="primary" plain @click="openCreate">新增账号</el-button>

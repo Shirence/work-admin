@@ -3,7 +3,7 @@
     <header class="page-head">
       <div>
         <h2>概览</h2>
-        <p class="u-hint">真实统计数据，来自本地 H2 数据库</p>
+        <p class="u-hint">真实统计数据，来自远程 MySQL 数据库</p>
       </div>
       <span class="u-label">{{ updatedLabel }}</span>
     </header>
@@ -29,9 +29,12 @@
       <article v-reveal="280" class="tile tile-chart col-8">
         <div class="tile-head">
           <h3>近 6 日消息量</h3>
-          <span class="u-label">LOCAL H2</span>
+          <span class="u-label">MYSQL · REMOTE</span>
         </div>
-        <div ref="barRef" class="chart" style="height:300px"></div>
+        <div class="chart-wrap">
+          <div ref="barRef" class="chart" style="height:300px"></div>
+          <div v-if="!messageTotal" class="chart-empty chart-empty-text">近 6 日暂无消息</div>
+        </div>
       </article>
 
       <article v-reveal="340" class="tile tile-chart col-4">
@@ -77,6 +80,9 @@ export default {
   computed: {
     roleTotal() {
       return (this.stats.roleDistribution || []).reduce((sum, r) => sum + (r.count || 0), 0)
+    },
+    messageTotal() {
+      return (this.stats.dailyMessages || []).reduce((sum, d) => sum + (d.count || 0), 0)
     },
     statCards() {
       return [
@@ -318,6 +324,13 @@ export default {
   color: var(--text-3);
   text-transform: uppercase;
   pointer-events: none;
+}
+/* 中文长文案用正常字号与字距，避免 10px 等宽字看不清 */
+.chart-empty-text {
+  font-family: inherit;
+  font-size: 12.5px;
+  letter-spacing: .02em;
+  color: var(--text-2);
 }
 
 @media (max-width: 1200px) {
