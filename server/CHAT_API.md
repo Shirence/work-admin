@@ -166,28 +166,7 @@ java -jar target\work-admin-server-1.0.0.jar
 `clientMessageId` 幂等、逐设备密文分发、新设备 PENDING/授权/历史 grant、
 设备级已读游标、建群全局/账号权限、群成员版本号、群消息 fanout、管理员重置设备。
 
-## 9. 远程 MySQL：远程账号群聊
-
-主库仍是 H2；另外挂了一个远程 MySQL 连接，只服务独立的远程账号体系：
-
-- **远程账号群聊**：`/remote-login` 用远程 `demo.user` 账号登录，`/remote-chat` 加入群聊、读历史、发消息。
-- 本地登录与远程登录完全独立：本地只显示本地 H2 消息，远程只显示远程 MySQL 消息。
-
-接口：
-
-- 远程登录/注册：`/api/remote-auth/login|register|me|logout`
-- 远程聊天：`/api/remote-chat/groups|join|messages`（仅远程 token）
-
-远程注册直接写远程 `user` 表并绑定 `member` 角色，注册成功自动登录；
-不能指定角色，不会创建超级管理员。
-
-安全边界：远程 token 只能访问 `/api/remote-auth/**` 和 `/api/remote-chat/**`；
-本地 token 不能调用远程群聊写接口。远程聊天的消息是明文，写入远程 `chat_message`，
-与 stu 项目共用数据；不是 E2EE。
-
-配置、并发/幂等规则和手工验证见 [`REMOTE_MYSQL.md`](REMOTE_MYSQL.md)。
-
-## 10. 浏览器端 E2EE 实现
+## 9. 浏览器端 E2EE 实现
 
 前端页面：`/chat`（[`Chat.vue`](../src/views/Chat.vue)）
 
@@ -203,13 +182,12 @@ java -jar target\work-admin-server-1.0.0.jar
 - 多设备：第二台设备注册后 PENDING，现有设备在「设备」对话框批准；
   新设备只能解密批准后发给它的消息。
 - 构建注意：`vue.config.js` 对 libsignal 的 curve25519 wasm 包设置 `resolve.fallback.fs=false`。
-- 本地与远程完全独立：本地登录只显示本地 H2 消息，远程登录只显示远程 MySQL 消息；
-  远程聊天只从远程登录/注册进入，不出现在本地侧栏。
+- 消息全部落在本地 H2，服务端只存逐设备密文。
 
 已实测：Node 端两个真实 libsignal 设备通过该后端完成
 `PreKeyWhisperMessage` 发送 → 对方解密 → `WhisperMessage` 回复 → 原设备解密。
 
-## 11. 当前未实现 / 下一步
+## 10. 当前未实现 / 下一步
 
 - WebSocket 实时推送（当前是 HTTP 增量同步）。
 - 客户端 libsignal 加密/解密、设备本地密钥存储、历史重加密。

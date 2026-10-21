@@ -16,22 +16,6 @@ const routes = [
     component: () => import('../views/Register.vue')
   },
   {
-    path: '/remote-login',
-    name: 'RemoteLogin',
-    component: () => import('../views/RemoteLogin.vue')
-  },
-  {
-    path: '/remote-register',
-    name: 'RemoteRegister',
-    component: () => import('../views/RemoteRegister.vue')
-  },
-  {
-    path: '/remote-chat',
-    name: 'RemoteChatRoom',
-    component: () => import('../views/RemoteChatRoom.vue'),
-    meta: { remoteAuth: true }
-  },
-  {
     path: '/',
     component: Layout,
     redirect: '/dashboard',
@@ -86,16 +70,10 @@ const router = createRouter({
 router.beforeEach(async to => {
   const token = store.state.token
 
-  // 白名单：登录、注册、远程账号登录/注册页无需本地 token
-  const whiteList = ['/login', '/register', '/remote-login', '/remote-register']
+  // 白名单：登录、注册页无需 token
+  const whiteList = ['/login', '/register']
   if (whiteList.includes(to.path)) {
-    if (to.path === '/remote-login' || to.path === '/remote-register') return true
     return token ? '/dashboard' : true
-  }
-
-  // 远程 stu 账号页面使用独立的 remoteToken，不依赖本地 H2 登录态
-  if (to.meta.remoteAuth) {
-    return localStorage.getItem('remoteToken') ? true : '/remote-login'
   }
 
   if (!token) return '/login'

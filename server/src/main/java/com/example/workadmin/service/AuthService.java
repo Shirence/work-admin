@@ -91,8 +91,7 @@ public class AuthService {
         String roleName = role == null ? account.getRole() : role.getName();
         return new UserInfo(account.getUsername(), roleCode,
                 accessService.permissionsFor(account.getUsername()),
-                role == null ? null : role.getId(), roleName,
-                null, account.getUsername(), "LOCAL");
+                role == null ? null : role.getId(), roleName);
     }
 
     public void logout(String token) {

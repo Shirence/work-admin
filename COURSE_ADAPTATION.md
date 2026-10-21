@@ -5,17 +5,15 @@
 
 ## 已完成
 
-### 1. 用户搜索与账号管理
+### 1. 用户与账号管理
 
-- 登录账号统一在「用户管理」页：
-  - `LOCAL` 标签：本地 H2 `sys_account`，支持新增、编辑、改密、启用/停用、绑定角色、删除；
-  - `REMOTE` 标签：远程 MySQL `user` + `sys_role`，支持搜索、新增、编辑、改密、绑定角色、删除。
-- 本地账号：`GET/POST /api/users`、`PUT/DELETE /api/users/{id}`。
-- 远程账号列表：`GET /api/remote-admin/users?keyword=`。
-- 远程角色：`GET /api/remote-admin/roles`。
-- 远程账号写操作：`POST/PUT/DELETE /api/remote-admin/users`、`PUT /api/remote-admin/users/{id}/role`。
+- 登录账号统一在「用户管理」页管理本地 H2 `sys_account`：
+  - 支持新增、编辑、改密、启用/停用、绑定角色、删除；
+  - `GET/POST /api/users`、`PUT/DELETE /api/users/{id}`、`PUT /api/users/{id}/role`。
 - 业务用户 `sys_user` 的旧前端表格已移除，避免和登录账号管理重复；后端旧接口保留但不在导航中使用。
-- 仪表盘「账号总数」「角色分布」改为真实 `sys_account` 数据，不再依赖旧业务用户表。
+- 仪表盘「账号总数」「角色分布」使用真实 `sys_account` 数据。
+- 早期引入的外部 MySQL 租户账号与远程群聊已整体下线（含 `remote-admin` / `remote-auth` / `remote-chat`
+  接口与三个远程页面），项目只依赖本地 H2；启动时会自动清理遗留的 `remote:*` 权限节点。
 
 ### 2. 权限 / 注册 / 角色绑定
 
@@ -23,7 +21,7 @@
 - 前端 `store.state.access` + `getters.can` + `refreshAccess`。
 - 路由改为 `meta.permission`，无权限进入 `/forbidden`。
 - `Layout` 按权限过滤导航。
-- 用户页下方新增「登录账号与角色」，通过 `PUT /api/users/{id}/role` 绑定角色。
+- 用户页支持通过 `PUT /api/users/{id}/role` 绑定角色。
 - 注册账号默认绑定 `viewer` 角色。
 
 ### 3. 角色管理
@@ -49,11 +47,10 @@
 - `WS /ws/chat`
 - 明文 `chat_message`
 
-当前项目已有两套聊天：
-- 本地 `/chat`：libsignal E2EE，逐设备密文、会话版本、已读游标；
-- 远程 `/remote-chat`：独立远程 MySQL 群聊。
+当前项目已有一套更强的聊天实现：
+- 本地 `/chat`：libsignal E2EE，逐设备密文、会话版本、已读游标。
 
-直接加课件式明文群聊会破坏 E2EE 边界并产生第三套聊天模型。
+直接加课件式明文群聊会破坏 E2EE 边界并产生第二套聊天模型。
 如果要做实时能力，建议给现有 E2EE 聊天加 WebSocket 只做「有新消息」通知，
 消息体仍走现有加密接口，而不是照搬 `/ws/chat` 明文协议。
 

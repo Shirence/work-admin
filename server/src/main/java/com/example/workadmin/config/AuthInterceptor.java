@@ -41,14 +41,6 @@ public class AuthInterceptor implements HandlerInterceptor {
             writeJson(response, 401, "未登录或登录已过期");
             return false;
         }
-        // 远程 stu 账号只允许访问远程登录态和远程群聊；不能调用本地 H2 的用户/聊天接口。
-        if ("REMOTE".equals(userInfo.getAuthSource())) {
-            String path = request.getRequestURI();
-            if (!path.startsWith("/api/remote-auth/") && !path.startsWith("/api/remote-chat/")) {
-                writeJson(response, 403, "远程账号仅可访问远程群聊");
-                return false;
-            }
-        }
         request.setAttribute(CURRENT_USER, userInfo);
         if (handler instanceof HandlerMethod method) {
             RequirePermission permission = method.getMethodAnnotation(RequirePermission.class);

@@ -16,7 +16,7 @@ server/data/*.mv.db
 server/data/*.trace.db
 server/data/*.lock.db
 
-# 本地私密配置（远程 MySQL 凭据等）
+# 本地私密配置（数据库凭据等，不入库）
 server/application-local.yml
 
 # 界面截图（本地预览用）

@@ -37,11 +37,8 @@
   --danger: #d61f4c;
 
   --on-accent: #04211c;
-  --on-remote: #ffffff;
   --auth-card: rgba(255, 255, 255, .84);
   --auth-border: rgba(0, 168, 143, .26);
-  --remote-card: rgba(255, 255, 255, .86);
-  --remote-border: rgba(214, 31, 105, .26);
 
   --grid-line: rgba(0, 168, 143, .14);
   --scan-line: rgba(8, 20, 24, .035);
@@ -132,11 +129,8 @@ html.dark {
   --danger: #ff4d7e;
 
   --on-accent: #03110d;
-  --on-remote: #12040a;
   --auth-card: rgba(7, 13, 21, .80);
   --auth-border: rgba(94, 242, 214, .18);
-  --remote-card: rgba(8, 12, 19, .82);
-  --remote-border: rgba(255, 61, 129, .22);
 
   --grid-line: rgba(94, 242, 214, .075);
   --scan-line: rgba(255, 255, 255, .03);

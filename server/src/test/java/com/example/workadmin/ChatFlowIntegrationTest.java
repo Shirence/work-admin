@@ -36,8 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(properties = {
         "spring.datasource.url=jdbc:h2:mem:chat-test;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
         "spring.jpa.hibernate.ddl-auto=create-drop",
-        "spring.h2.console.enabled=false",
-        "workadmin.remote-mysql.enabled=false"
+        "spring.h2.console.enabled=false"
 })
 @AutoConfigureMockMvc
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)

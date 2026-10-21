@@ -47,13 +47,6 @@
       <scope>runtime</scope>
     </dependency>
 
-    <!-- 只读查看远程 MySQL（stu 群聊库）；主库仍然是 H2 -->
-    <dependency>
-      <groupId>com.mysql</groupId>
-      <artifactId>mysql-connector-j</artifactId>
-      <scope>runtime</scope>
-    </dependency>
-
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-test</artifactId>

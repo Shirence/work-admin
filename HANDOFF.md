@@ -69,7 +69,6 @@ npm run serve
 | 构建 | Vue CLI 5（webpack 5）+ Babel |
 | 后端 | Spring Boot 3.5.16 + Spring Web + Spring Data JPA + Bean Validation |
 | 数据库 | H2 文件库（`jdbc:h2:file:./data/workadmin`，文件在 `server/data/workadmin.mv.db`） |
-| 远程 MySQL | MySQL Connector/J + 只读查询池 + 可写聊天池；支持远程 stu 账号登录/注册、加入群聊、收发消息 |
 | 密码 | `spring-security-crypto` 的 BCrypt（**不引完整 Spring Security**） |
 | JDK / Maven | JDK 17+（本机用 jdk-22）；Maven 3.9.16 |
 
@@ -108,7 +107,6 @@ work-admin/
 │   │   ├── auth.js             # login / register / logout / getMe
 │   │   ├── user.js             # getUserList / addUser / editUser / delUser
 │   │   ├── dashboard.js        # /dashboard/stats 真实统计
-│   │   ├── remoteChat.js       # 远程 stu 账号登录 + 远程群聊
 │   │   └── chat.js             # 本地 E2EE 聊天 API（设备/会话/消息）
 │   ├── components/
 │   │   ├── UserFormDialog.vue  # 用户弹窗表单（自定义 v-model）
@@ -137,15 +135,11 @@ work-admin/
 │   │   ├── Dashboard.vue       # Bento 栅格 + ECharts + /api/dashboard/stats 真实统计
 │   │   ├── Chat.vue            # 本地 E2EE 消息页（设备初始化/会话/收发）
 │   │   ├── User.vue
-│   │   ├── RemoteLogin.vue     # 远程 stu 账号登录
-│   │   ├── RemoteRegister.vue  # 远程 stu 账号注册
-│   │   └── RemoteChatRoom.vue  # 远程群聊（加入/建群/收发消息）
+│   │   ├── Roles.vue           # 角色 CRUD + 权限树
 │   ├── App.vue                 # 设计系统 tokens + 全局样式（关键！）
 │   └── main.js                 # 入口：注册图标 / v-reveal / Mock 开关
 ├── server/                     # 见第 5 节
 │   ├── CHAT_API.md             # 聊天后端接口
-│   ├── REMOTE_MYSQL.md         # 远程 MySQL 账号群聊
-│   └── application-local.yml   # 远程库凭据（已 gitignore，运行时加载）
 ├── deploy/nginx.conf           # history 回退 + /api 反代
 ├── .env.development            # VUE_APP_USE_MOCK=false
 ├── .env.production             # VUE_APP_USE_MOCK=false
@@ -268,19 +262,13 @@ com.example.workadmin
 - 建群权限：`chat_group_policy`（全局）+ `chat_account_group_permission`（账号覆盖）
 - 服务端只存密文；新设备 PENDING，必须由已有 ACTIVE 设备授权后才能同步
 - 集成测试：`server/src/test/java/com/example/workadmin/ChatFlowIntegrationTest.java`（12 项）
-- 远程账号群聊：`/remote-login` 用远程 `demo.user` 账号登录或注册（独立 `remoteToken`），
-  `/remote-chat` 可加入群聊、读历史、发消息；写入远程 `chat_group/chat_member/chat_message`。
-  远程 token 只能访问 `/api/remote-auth/**` 和 `/api/remote-chat/**`，不能调用本地 H2 接口。
-  远程注册直接写 `user` 表并绑定 `member` 角色，不允许指定角色。
 - 本地 E2EE 消息页：`/chat` 首次进入生成 identity key / signed pre-key / one-time pre-key，
   私钥只存浏览器 `localStorage`（按 clientDeviceKey 隔离）；发送时对每个目标设备
   `SessionCipher.encrypt`，每条消息生成多个 `chat_envelope`。
 - 新设备：第二台设备注册后为 PENDING，现有设备在「设备」对话框批准后激活；
   批准前无法同步，批准后只能解密之后发给它的消息（旧消息需额外历史密钥授权）。
 - Vue 构建：`vue.config.js` 里给 libsignal 的 curve25519 wasm 包设置 `resolve.fallback.fs=false`。
-- 本地 / 远程完全独立：本地登录只显示本地 H2 消息；远程登录只显示远程 MySQL 消息。
-  远程聊天不在本地侧栏出现，只从 `/remote-login` / `/remote-register` 成功后进入。
-  远程聊天需要独立远程账号登录，本地 token 与 remoteToken 互不覆盖。
+- 消息只落在本地 H2，服务端只存逐设备密文。
 
 ### 5.9 RBAC：角色、菜单、按钮权限
 
@@ -290,8 +278,6 @@ com.example.workadmin
   - `GET /api/auth/access` → `{role, permissions, menus}`
   - `GET /api/users` + `POST/PUT/DELETE /api/users`（本地登录账号 CRUD）
   - `PUT /api/users/{id}/role`（本地账号绑定角色）
-  - `GET /api/remote-admin/users|roles`、`POST/PUT/DELETE /api/remote-admin/users`、
-    `PUT /api/remote-admin/users/{id}/role`（本地 admin 管理远程 stu 账号）
   - `/api/roles` CRUD、`/api/roles/options`、`/api/roles/{id}/permissions`
   - `/api/menus` CRUD、`/api/menus/permission-tree`
 - `@RequirePermission("user:read")` 由 `AuthInterceptor` 统一校验；无权限返回 HTTP 200 + `code=403`。
@@ -340,10 +326,6 @@ Spring Boot
    ├─ roles     → Roles.vue      meta:{title:'角色管理', icon:'Avatar', menu:true, permission:'role:read'}
    ├─ menus     → Menus.vue      meta:{title:'菜单管理', icon:'Menu', menu:true, permission:'menu:read'}
    └─ forbidden → Forbidden.vue
-
-/remote-login → RemoteLogin.vue    （公开；远程 stu 账号登录）
-/remote-register → RemoteRegister.vue（公开；远程 stu 账号注册）
-/remote-chat  → RemoteChatRoom.vue （meta.remoteAuth；独立 remoteToken，不依赖本地 token）
 ```
 
 - **history 模式**（`createWebHistory(process.env.BASE_URL)`），生产必须配 SPA 回退
@@ -443,7 +425,7 @@ html {
   - 派发 `window` 事件 `theme-change`
 - `src/components/ThemeToggle.vue`
   - 顶栏/登录页右上角的 `LIGHT / DARK` 按钮
-  - 已放在 `Layout.vue`、四个 auth 页、`RemoteChatRoom.vue`
+  - 已放在 `Layout.vue`、`Login.vue`、`Register.vue`、`Forbidden.vue`
 - `main.js` 在挂载前 `initTheme()`，避免刷新闪白/闪黑
 - `Dashboard.vue` 监听 `theme-change`，销毁并重建 ECharts，保证图表颜色跟随主题
 
@@ -467,14 +449,12 @@ html {
 |---|---|
 | `Layout.vue` | 248px 侧栏（HUD 网格、六边形品牌标、序号导航、LINK STABLE）+ 玻璃顶栏（主题切换/角色/用户/EXIT）+ `.content.mesh.noise` |
 | `Login.vue` / `Register.vue` | 全屏 `.mesh.noise` + `<ParticleField>` + 玻璃卡（渐变描边）+ 薄荷渐变主按钮 + 右上角主题切换 |
-| `RemoteLogin.vue` / `RemoteRegister.vue` | 同上，但使用品红/冰蓝远程色系；注册独立为 `/remote-register` |
 | `Dashboard.vue` | Bento 栅格 + 主题感知的 ECharts（柱状/环形） |
-| `User.vue` | 统一账号管理：LOCAL / REMOTE 双标签；本地角色绑定 + 远程用户 CRUD |
+| `User.vue` | 本地登录账号管理：CRUD + 角色绑定 + 启停 + 刷新权限 |
 | `Roles.vue` | 角色 CRUD + 权限树（独立勾选，保存自动补祖先） |
 | `Menus.vue` | 目录/页面/按钮 CRUD，树形表格 |
 | `Forbidden.vue` | 无权限页，可刷新权限 |
-| `Chat.vue` | 本地 E2EE 消息页；只显示本地 H2 消息 |
-| `RemoteChatRoom.vue` | 远程群聊；独立登录态 + 248px 远程侧栏 + 72px 顶栏 + ThemeToggle，和主 Layout 结构对齐；只显示远程消息 |
+| `Chat.vue` | 本地 E2EE 消息页（设备初始化/会话/收发） |
 
 ### 7.6 注意
 
@@ -499,8 +479,6 @@ cd E:\my-project\work-admin\server
 mvn spring-boot:run                     # 开发启动（会加载 server/application-local.yml）
 mvn -DskipTests package                 # 打包 → target/work-admin-server-1.0.0.jar
 java -jar target\work-admin-server-1.0.0.jar
-# 远程 MySQL 凭据放在 server/application-local.yml（已 gitignore）
-# 不配置时远程登录/远程群聊返回 503，H2 业务照常运行
 
 # ---------- 部署 ----------
 npx serve -s dist           # 本地预览 dist（-s 必须有，history 模式需要回退）
@@ -518,7 +496,6 @@ npx serve -s dist           # 本地预览 dist（-s 必须有，history 模式�
 | **停掉后端再操作** | 前端报「获取列表失败」/ 500，说明确实依赖后端 |
 | **H2 控制台** | `http://localhost:8081/h2-console` 能看到 `sys_user` / `sys_account` 及聊天表 |
 | **重启后端** | H2 文件库数据保留（不再是内存库） |
-| **远程账号群聊** | 登录页点「远程账号登录 →」，可登录或注册远程账号；进入 `/remote-chat` 后能加入群并发消息即说明远程读写链路生效 |
 | **本地 E2EE 消息** | 登录后进入 `/chat`，首次会生成设备密钥；发送消息后 Network 里 `/api/chat/messages` 的 envelopes 是密文，接收端能显示明文即说明 libsignal 链路生效 |
 | **双主题** | 右上角 `LIGHT / DARK` 切换，刷新后保持；Dashboard 图表、Element Plus 表格/弹窗颜色一起变化 |
 | **curl 直连** | `Invoke-RestMethod http://localhost:8081/api/health` |
@@ -532,27 +509,27 @@ npx serve -s dist           # 本地预览 dist（-s 必须有，history 模式�
 
 1. **按课程文档（第 0~10 课）搭建前端**：Vue CLI 5 + Element Plus + Vuex + Router + Axios + MockJS + ECharts。
 2. **修复启动问题**：favicon 404、ChunkLoadError（`router.onError` 自动刷新）、端口冲突。
-3. **仪表盘全部接真实统计**：`GET /api/dashboard/stats` 返回用户/会话/消息/设备/近 6 日消息量；角色分布由真实用户列表计算，没有数据时显示 0。
-4. **迁移项目**：`D:\Downloads\work-admin` → `E:\my-project\work-admin`（用 robocopy 排除 node_modules 后 `npm install`）。
+3. **仪表盘全部接真实统计**：`GET /api/dashboard/stats` 返回用户/会话/消息/设备/近 6 日消息量。
+4. **迁移项目**：`D:\Downloads\work-admin` → `E:\my-project\work-admin`。
 5. **切换 history 路由**：`createWebHistory` + `deploy/nginx.conf` 的 `try_files`。
 6. **新增 Spring Boot 后端**：`server/`，Spring Boot 3.5.16 + JPA + H2，接口对齐前端契约。
-7. **前端接入后端**：新增 `src/api/auth.js`、`request.js` 加 401、`VUE_APP_USE_MOCK` 开关、`build:mock`。
-8. **移除数据来源标注** + 首轮美化。
-9. **改成科技终端风**（白底 + 青色 + 等宽标注 + HUD 角标）。
-10. **新增注册功能**：`sys_account` 表、BCrypt、`POST /api/register`、`/register` 页面。
-11. **按「美化手册」重构为高级白色设计系统**：四层（材质/呼吸/空间/组件系统）、Bento 栅格、玻璃顶栏、粒子场、`v-reveal`。
-12. **全部提交并推送到 Gitee**（提交信息用英文）。
+7. **前端接入后端**：`src/api/request.js` 拦截器、`VUE_APP_USE_MOCK` 开关、`build:mock`。
+8. **设计系统四轮迭代**：数据来源标注移除 → 科技终端风 → 高级白色设计系统 → 深空工业 HUD 双主题。
+9. **新增注册功能**：`sys_account` 表、BCrypt、`POST /api/register`、`/register` 页面。
+10. **RBAC**：`sys_role` / `sys_menu` / `sys_role_menu`、`@RequirePermission`、`/api/auth/access`、角色页与菜单页。
+11. **E2EE 聊天**：libsignal 设备/会话/逐设备密文、已读游标、群权限。
+12. **下线远程 MySQL 账号模块**：移除外部租户账号登录、远程群聊、`remote-admin` 接口、`mysql-connector-j` 与 `application-local.yml`；本地账号管理改为单列表，启动时清理遗留 `remote:*` 权限节点。
 
-**当前 git 提交（从旧到新）**：
+**当前 git 提交（从旧到新，节选）**：
 
 ```text
-9ec7938  new add springboot
-23cc418  feat: 接入 Spring Boot 后端，后端工程迁入 server/
-8d46159  style: refresh the UI and drop the data-source annotations
-4a9f1ab  style: switch the frontend to a futuristic terminal theme (light)
-09479d8  feat: add user registration (backend API + terminal-style page)
-d8ab149  style: rebuild the UI as a premium white-based design system
-bbe0cb2  docs: document the design system and v-reveal usage   ← HEAD
+bbe0cb2  docs: document the design system and v-reveal usage
+a2026ba  docs: add HANDOFF.md as an AI context handoff document
+5c1db08  feat: add E2EE chat, remote MySQL viewer, and remote account chat
+0d9d8a4  feat: real dashboard stats and independent chat modes
+b62e879  feat: add RBAC roles menus and permission guards
+032d488  docs: document course adaptation and deferred chat modules
+a98e0d5  feat: unify local and remote account management   ← HEAD
 ```
 
 ---
