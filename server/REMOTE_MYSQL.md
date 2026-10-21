@@ -83,7 +83,25 @@ $env:REMOTE_MYSQL_PASSWORD='******'
 }
 ```
 
-## 5. 远程群聊接口
+## 5. 本地管理员远程账号管理
+
+本地 `admin` 登录后，在「用户管理 → 远程账号」中管理远程 `user` 表：
+
+| 方法 | 路径 | 权限 |
+|---|---|---|
+| GET | `/api/remote-admin/users?keyword=` | `remote:user:read` |
+| GET | `/api/remote-admin/roles` | `remote:user:read` |
+| POST | `/api/remote-admin/users` | `remote:user:create` |
+| PUT | `/api/remote-admin/users/{id}` | `remote:user:update` |
+| PUT | `/api/remote-admin/users/{id}/role` | `remote:user:assign-role` |
+| DELETE | `/api/remote-admin/users/{id}` | `remote:user:delete` |
+
+- 新增账号写入远程 `user`，密码为三次 MD5；默认绑定 `member` 角色。
+- 编辑可改昵称、账号、密码（留空不改）、角色。
+- 仍是群主的远程账号不能删除，需先处理其群聊。
+- 本地 `manager` / `viewer` 没有这些权限，访问返回 `code=403`。
+
+## 6. 远程群聊接口
 
 | 方法 | 路径 | 说明 |
 |---|---|---|
@@ -103,7 +121,7 @@ $env:REMOTE_MYSQL_PASSWORD='******'
 - 发送者身份取自远程 token 的 `remoteUserId`，不信任客户端传入的 senderId。
 - 消息写入后，stu 项目刷新历史即可看到；本项目页面用 3 秒轮询增量刷新（不是 WebSocket）。
 
-## 6. 前端页面
+## 7. 前端页面
 
 | 路径 | 说明 |
 |---|---|
@@ -115,7 +133,7 @@ $env:REMOTE_MYSQL_PASSWORD='******'
 远程聊天不出现在本地侧栏，只从 `/remote-login` 或 `/remote-register` 成功后进入。
 远程登录态使用 `localStorage.remoteToken` / `remoteUserInfo`，与本地 `token` / `userInfo` 完全分离。
 
-## 7. 远程表结构
+## 8. 远程表结构
 
 远程群聊按 `stu` 当前 schema 查询/写入：
 
@@ -127,7 +145,7 @@ $env:REMOTE_MYSQL_PASSWORD='******'
 
 如果远程 schema 变化，修改 `RemoteChatService` / `RemoteAuthService` 中的 SQL。
 
-## 8. 验证
+## 9. 验证
 
 ```powershell
 cd E:\my-project\work-admin\server

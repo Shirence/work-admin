@@ -56,6 +56,18 @@ export function getAccounts() {
   return request({ url: '/users', method: 'get' })
 }
 
+export function createAccount(data) {
+  return request({ url: '/users', method: 'post', data })
+}
+
+export function updateAccount(id, data) {
+  return request({ url: `/users/${id}`, method: 'put', data })
+}
+
+export function deleteAccount(id) {
+  return request({ url: `/users/${id}`, method: 'delete' })
+}
+
 export function bindUserRole(id, roleId) {
   return request({ url: `/users/${id}/role`, method: 'put', data: { roleId } })
 }

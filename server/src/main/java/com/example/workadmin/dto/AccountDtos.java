@@ -9,6 +9,10 @@ public final class AccountDtos {
                              String roleName, String roleCode, Boolean enabled) {
     }
 
+    public record AccountRequest(String username, String email, String password,
+                                 Long roleId, Boolean enabled) {
+    }
+
     public record RoleBindRequest(Long roleId) {
     }
 }

@@ -207,7 +207,7 @@ com.example.workadmin
 | POST | `/api/register` | 否 | `{username, password, confirmPassword, email}` | `{username, role, permissions}` |
 | POST | `/api/logout` | 是 | - | `null` |
 | GET | `/api/me` | 是 | - | `{username, role, permissions}` |
-| GET | `/api/dashboard/stats` | 是 | - | `{userCount, accountCount, conversationCount, messageCount, deviceCount, activeDeviceCount, dailyMessages:[{date,count}], fetchedAt}` |
+| GET | `/api/dashboard/stats` | 是 | - | `{userCount, accountCount, conversationCount, messageCount, deviceCount, activeDeviceCount, dailyMessages, roleDistribution, fetchedAt}` |
 | GET | `/api/user/list?keyword=` | 是 | query | `[{id, username, phone, role}]` |
 | POST | `/api/user/add` | 是 | `{username, phone, role}` | 新增后的 User |
 | POST | `/api/user/edit` | 是 | `{id, username, phone, role}` | 编辑后的 User |
@@ -288,7 +288,10 @@ com.example.workadmin
 - 权限点来自 `sys_menu.permission`，不写死在代码里；`admin` 额外拥有 `*`。
 - 接口：
   - `GET /api/auth/access` → `{role, permissions, menus}`
-  - `GET /api/users` + `PUT /api/users/{id}/role`（登录账号列表/绑定角色）
+  - `GET /api/users` + `POST/PUT/DELETE /api/users`（本地登录账号 CRUD）
+  - `PUT /api/users/{id}/role`（本地账号绑定角色）
+  - `GET /api/remote-admin/users|roles`、`POST/PUT/DELETE /api/remote-admin/users`、
+    `PUT /api/remote-admin/users/{id}/role`（本地 admin 管理远程 stu 账号）
   - `/api/roles` CRUD、`/api/roles/options`、`/api/roles/{id}/permissions`
   - `/api/menus` CRUD、`/api/menus/permission-tree`
 - `@RequirePermission("user:read")` 由 `AuthInterceptor` 统一校验；无权限返回 HTTP 200 + `code=403`。
@@ -466,7 +469,7 @@ html {
 | `Login.vue` / `Register.vue` | 全屏 `.mesh.noise` + `<ParticleField>` + 玻璃卡（渐变描边）+ 薄荷渐变主按钮 + 右上角主题切换 |
 | `RemoteLogin.vue` / `RemoteRegister.vue` | 同上，但使用品红/冰蓝远程色系；注册独立为 `/remote-register` |
 | `Dashboard.vue` | Bento 栅格 + 主题感知的 ECharts（柱状/环形） |
-| `User.vue` | 页头 + 面板 + 表格；表头由全局深/浅色样式接管；下方「登录账号与角色」 |
+| `User.vue` | 统一账号管理：LOCAL / REMOTE 双标签；本地角色绑定 + 远程用户 CRUD |
 | `Roles.vue` | 角色 CRUD + 权限树（独立勾选，保存自动补祖先） |
 | `Menus.vue` | 目录/页面/按钮 CRUD，树形表格 |
 | `Forbidden.vue` | 无权限页，可刷新权限 |

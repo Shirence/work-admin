@@ -49,6 +49,7 @@ public class DataInitializer {
                 accountRepository.save(account("viewer", "viewer@work-admin.local", "viewer", passwordEncoder));
             }
             seedAccess(roleRepository, menuRepository, roleMenuRepository);
+            ensureRemotePermissions(roleRepository, menuRepository, roleMenuRepository);
             // 旧数据没有 roleId 时按 role 编码回填。
             for (Account account : accountRepository.findAll()) {
                 if (account.getRoleId() == null) {
@@ -101,6 +102,34 @@ public class DataInitializer {
                     menuCreate, menuUpdate, menuDelete);
             grant(roleMenuRepository, manager, dashboard, chat, system, user, userUpdate);
             grant(roleMenuRepository, viewer, dashboard, chat);
+        }
+    }
+
+    private void ensureRemotePermissions(RoleRepository roleRepository,
+                                         MenuRepository menuRepository,
+                                         RoleMenuRepository roleMenuRepository) {
+        Menu userPage = menuRepository.findByPermission("user:read").orElse(null);
+        Role admin = roleRepository.findByCode("admin").orElse(null);
+        if (userPage == null || admin == null) return;
+
+        String[][] defs = {
+                {"远程用户查看", "remote:user:read"},
+                {"新增远程用户", "remote:user:create"},
+                {"编辑远程用户", "remote:user:update"},
+                {"删除远程用户", "remote:user:delete"},
+                {"绑定远程角色", "remote:user:assign-role"}
+        };
+        List<Long> granted = roleMenuRepository.findByRoleId(admin.getId()).stream()
+                .map(RoleMenu::getMenuId).toList();
+        int sort = 10;
+        for (String[] def : defs) {
+            int order = sort;
+            Menu node = menuRepository.findByPermission(def[1]).orElseGet(() ->
+                    menu(menuRepository, userPage.getId(), def[0], "BUTTON", null, def[1], order, true));
+            if (!granted.contains(node.getId())) {
+                roleMenuRepository.save(new RoleMenu(admin.getId(), node.getId()));
+            }
+            sort++;
         }
     }
 

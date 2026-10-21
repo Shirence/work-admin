@@ -5,10 +5,17 @@
 
 ## 已完成
 
-### 1. 用户搜索
+### 1. 用户搜索与账号管理
 
-- 现有 `GET /api/user/list?keyword=` 已经是后端搜索，不是前端 filter。
-- 登录账号列表新增 `GET /api/users`，返回账号、邮箱、角色、状态。
+- 登录账号统一在「用户管理」页：
+  - `LOCAL` 标签：本地 H2 `sys_account`，支持新增、编辑、改密、启用/停用、绑定角色、删除；
+  - `REMOTE` 标签：远程 MySQL `user` + `sys_role`，支持搜索、新增、编辑、改密、绑定角色、删除。
+- 本地账号：`GET/POST /api/users`、`PUT/DELETE /api/users/{id}`。
+- 远程账号列表：`GET /api/remote-admin/users?keyword=`。
+- 远程角色：`GET /api/remote-admin/roles`。
+- 远程账号写操作：`POST/PUT/DELETE /api/remote-admin/users`、`PUT /api/remote-admin/users/{id}/role`。
+- 业务用户 `sys_user` 的旧前端表格已移除，避免和登录账号管理重复；后端旧接口保留但不在导航中使用。
+- 仪表盘「账号总数」「角色分布」改为真实 `sys_account` 数据，不再依赖旧业务用户表。
 
 ### 2. 权限 / 注册 / 角色绑定
 

@@ -6,6 +6,7 @@ import com.example.workadmin.repository.AccountRepository;
 import com.example.workadmin.repository.ChatConversationRepository;
 import com.example.workadmin.repository.ChatDeviceRepository;
 import com.example.workadmin.repository.ChatMessageRepository;
+import com.example.workadmin.repository.RoleRepository;
 import com.example.workadmin.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,17 +33,20 @@ public class DashboardService {
     private final ChatConversationRepository conversationRepository;
     private final ChatMessageRepository messageRepository;
     private final ChatDeviceRepository deviceRepository;
+    private final RoleRepository roleRepository;
 
     public DashboardService(UserRepository userRepository,
                             AccountRepository accountRepository,
                             ChatConversationRepository conversationRepository,
                             ChatMessageRepository messageRepository,
-                            ChatDeviceRepository deviceRepository) {
+                            ChatDeviceRepository deviceRepository,
+                            RoleRepository roleRepository) {
         this.userRepository = userRepository;
         this.accountRepository = accountRepository;
         this.conversationRepository = conversationRepository;
         this.messageRepository = messageRepository;
         this.deviceRepository = deviceRepository;
+        this.roleRepository = roleRepository;
     }
 
     @Transactional(readOnly = true)
@@ -71,7 +75,18 @@ public class DashboardService {
                 deviceRepository.count(),
                 deviceRepository.countByStatus(ChatConstants.DEVICE_ACTIVE),
                 daily,
+                roleDistribution(),
                 LocalDateTime.now()
         );
+    }
+
+    private List<DashboardStats.RoleCount> roleDistribution() {
+        return roleRepository.findAllByOrderByIdAsc().stream()
+                .map(role -> new DashboardStats.RoleCount(
+                        role.getName(),
+                        role.getCode(),
+                        accountRepository.countByRoleId(role.getId())
+                ))
+                .toList();
     }
 }

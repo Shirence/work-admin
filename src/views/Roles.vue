@@ -3,7 +3,7 @@
     <header class="page-head">
       <div>
         <h2>角色管理</h2>
-        <p class="u-hint">角色、账号绑定与菜单权限都来自后端真实数据</p>
+        <p class="u-hint">定义角色与菜单权限；账号绑定在用户管理中完成</p>
       </div>
       <span class="u-label">{{ rows.length }} roles</span>
     </header>
@@ -11,7 +11,7 @@
     <section class="panel">
       <div class="toolbar">
         <div class="toolbar-left">
-          <el-input v-model="keyword" placeholder="筛选已加载的角色" clearable class="search" />
+          <el-input v-model="keyword" placeholder="筛选角色名或编码" clearable class="search" />
           <el-button :disabled="busy" @click="load">刷新</el-button>
         </div>
         <el-button v-if="can('role:create')" type="primary" plain :disabled="busy" @click="open()">新增角色</el-button>
@@ -22,7 +22,7 @@
         <el-table-column prop="code" label="编码" min-width="120">
           <template #default="{ row }"><span class="mono dim">{{ row.code }}</span></template>
         </el-table-column>
-        <el-table-column prop="userCount" label="绑定账号" width="110" />
+        <el-table-column prop="userCount" label="账号数" width="110" />
         <el-table-column label="状态" width="90">
           <template #default="{ row }">
             <span class="chip" :class="row.enabled ? 'chip-admin' : 'chip-user'">{{ row.enabled ? '启用' : '停用' }}</span>
@@ -216,7 +216,7 @@ export default {
 .panel { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-lg); box-shadow: var(--shadow-xs); padding: 18px; }
 .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
 .toolbar-left { display: flex; align-items: center; gap: 10px; }
-.search { width: 240px; }
+.search { width: 260px; }
 .chip { font-size: 10px; padding: 3px 8px; border-radius: 999px; border: 1px solid var(--line-2); }
 .chip-admin { color: var(--accent); background: var(--accent-soft); border-color: var(--accent-line); }
 .chip-user { color: var(--text-2); background: var(--bg-inset); }

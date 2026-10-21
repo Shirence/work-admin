@@ -41,7 +41,7 @@
         </div>
         <div class="chart-wrap">
           <div ref="pieRef" class="chart" style="height:300px"></div>
-          <div v-if="!users.length" class="chart-empty">0</div>
+          <div v-if="!roleTotal" class="chart-empty">0</div>
         </div>
       </article>
     </div>
@@ -50,7 +50,6 @@
 
 <script>
 import * as echarts from 'echarts'
-import { getUserList } from '../api/user'
 import { getDashboardStats } from '../api/dashboard'
 
 const EMPTY_STATS = {
@@ -61,6 +60,7 @@ const EMPTY_STATS = {
   deviceCount: 0,
   activeDeviceCount: 0,
   dailyMessages: [],
+  roleDistribution: [],
   fetchedAt: null
 }
 
@@ -68,7 +68,6 @@ export default {
   name: 'Dashboard',
   data() {
     return {
-      users: [],
       stats: { ...EMPTY_STATS },
       loading: false,
       barChart: null,
@@ -76,9 +75,12 @@ export default {
     }
   },
   computed: {
+    roleTotal() {
+      return (this.stats.roleDistribution || []).reduce((sum, r) => sum + (r.count || 0), 0)
+    },
     statCards() {
       return [
-        { code: 'USR.TOTAL', label: '用户总数', value: this.stats.userCount || 0, icon: 'UserFilled', color: 'var(--accent)' },
+        { code: 'USR.ACCOUNTS', label: '账号总数', value: this.stats.accountCount || 0, icon: 'UserFilled', color: 'var(--accent)' },
         { code: 'CHAT.ROOMS', label: '会话总数', value: this.stats.conversationCount || 0, icon: 'ChatDotRound', color: 'var(--ice)' },
         { code: 'CHAT.MSG', label: '消息总数', value: this.stats.messageCount || 0, icon: 'Bell', color: 'var(--violet)' },
         { code: 'DEV.ACTIVE', label: '活跃设备', value: this.stats.activeDeviceCount || 0, icon: 'DataLine', color: 'var(--warn)' }
@@ -110,17 +112,12 @@ export default {
     async fetchAll() {
       this.loading = true
       try {
-        const [statsRes, usersRes] = await Promise.all([
-          getDashboardStats(),
-          getUserList({})
-        ])
+        const statsRes = await getDashboardStats()
         this.stats = { ...EMPTY_STATS, ...(statsRes.data || {}) }
-        this.users = usersRes.data || []
         this.updateBarChart()
         this.updatePieChart()
       } catch (e) {
         this.stats = { ...EMPTY_STATS }
-        this.users = []
         this.updateBarChart()
         this.updatePieChart()
         this.$message.error('获取统计数据失败')
@@ -185,17 +182,9 @@ export default {
     },
 
     pieData() {
-      let admin = 0
-      let normal = 0
-      this.users.forEach(u => {
-        if (u.role === 'admin') admin++
-        else normal++
-      })
-      if (!admin && !normal) return []
-      return [
-        { name: '管理员', value: admin },
-        { name: '普通用户', value: normal }
-      ]
+      return (this.stats.roleDistribution || [])
+        .filter(r => (r.count || 0) > 0)
+        .map(r => ({ name: r.name || r.code, value: r.count }))
     },
 
     updateBarChart() {

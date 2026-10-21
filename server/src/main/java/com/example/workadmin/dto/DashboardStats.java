@@ -14,9 +14,13 @@ public record DashboardStats(
         long deviceCount,
         long activeDeviceCount,
         List<DailyMessageCount> dailyMessages,
+        List<RoleCount> roleDistribution,
         LocalDateTime fetchedAt
 ) {
 
     public record DailyMessageCount(String date, long count) {
+    }
+
+    public record RoleCount(String name, String code, long count) {
     }
 }

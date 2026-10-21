@@ -324,11 +324,20 @@ html.dark .noise::after { opacity: .5; }
 
 .u-hint { font-size: 12px; color: var(--text-3); }
 
+.page-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
 .page-head h2 {
   font-family: var(--display);
+  font-size: 24px;
   font-weight: 700;
-  letter-spacing: -.035em;
+  letter-spacing: -.04em;
+  margin-bottom: 4px;
 }
+.page-head .u-hint { margin: 0; }
 
 /* ============ Element Plus 双主题校准 ============ */
 .el-input__wrapper,
@@ -348,7 +357,10 @@ html.dark .noise::after { opacity: .5; }
   box-shadow: 0 0 0 1px var(--accent) inset, 0 0 0 3px var(--accent-soft) !important;
 }
 .el-input__inner,
-.el-textarea__inner { color: var(--text) !important; }
+.el-textarea__inner { color: var(--text) !important; font-size: 13px; }
+.el-select__selected-item,
+.el-select__placeholder { font-size: 13px; }
+.el-form-item__label { font-size: 12.5px; color: var(--text-2); }
 .el-input__inner::placeholder,
 .el-textarea__inner::placeholder { color: var(--text-3) !important; }
 
@@ -363,6 +375,7 @@ html.dark .noise::after { opacity: .5; }
   --el-button-active-border-color: var(--accent);
   --el-button-active-text-color: var(--accent);
   border-radius: 3px;
+  font-size: 12.5px !important;
 }
 .el-button--primary {
   --el-button-bg-color: var(--accent);
@@ -381,6 +394,8 @@ html.dark .noise::after { opacity: .5; }
   --el-button-border-color: color-mix(in srgb, var(--danger) 42%, transparent);
   --el-button-text-color: var(--danger);
 }
+.el-button.is-disabled,
+.el-button.is-disabled:hover { opacity: .35; }
 
 .el-dialog,
 .el-message-box {
@@ -390,7 +405,7 @@ html.dark .noise::after { opacity: .5; }
   box-shadow: var(--shadow-lg);
 }
 .el-dialog__title,
-.el-message-box__title { color: var(--text); font-family: var(--display); }
+.el-message-box__title { color: var(--text); font-family: var(--display); font-size: 16px; }
 .el-dialog__header { border-bottom: 1px solid var(--line); padding-bottom: 12px; }
 .el-dialog__footer { border-top: 1px solid var(--line); padding-top: 12px; }
 
@@ -403,15 +418,21 @@ html.dark .noise::after { opacity: .5; }
   --el-table-text-color: var(--text-2);
   --el-table-header-text-color: var(--text-3);
   background: transparent;
+  font-size: 13px;
 }
 .el-table th.el-table__cell,
 .el-table tr,
 .el-table td.el-table__cell { background: transparent; }
 .el-table th.el-table__cell {
   background: var(--bg-inset);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 600;
   text-transform: uppercase;
   letter-spacing: .1em;
 }
+.el-table td.el-table__cell { font-size: 13px; }
+.el-table .cell { line-height: 1.45; }
 .el-table__empty-text { color: var(--text-3); }
 
 .el-empty__image { filter: grayscale(1) contrast(.9); opacity: .55; }
