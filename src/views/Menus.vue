@@ -3,7 +3,6 @@
     <header class="page-head">
       <div>
         <h2>菜单与按钮权限</h2>
-        <p class="u-hint">目录 → 页面 → 按钮；权限标识同时用于路由守卫和后端接口</p>
       </div>
       <span class="u-label">{{ rows.length }} nodes</span>
     </header>
@@ -64,7 +63,7 @@
           <el-switch v-model="form.enabled" :disabled="form.builtin" />
         </el-form-item>
       </el-form>
-      <p class="u-hint">内置节点只允许改名称和排序；新增业务页面后仍需在 router 中注册组件。</p>
+      <p class="u-hint">内置节点仅可修改名称与排序。</p>
       <template #footer>
         <el-button :disabled="busy" @click="visible = false">取消</el-button>
         <el-button type="primary" :loading="busy" @click="save">保存</el-button>

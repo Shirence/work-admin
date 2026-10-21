@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-// 第 10 课：接口前缀来自环境变量（.env.development / .env.production）
+// 接口前缀来自环境变量（.env.development / .env.production）
 const service = axios.create({
   baseURL: process.env.VUE_APP_BASE_API,
   timeout: 5000

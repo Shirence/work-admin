@@ -3,7 +3,6 @@
     <header class="page-head">
       <div>
         <h2>角色管理</h2>
-        <p class="u-hint">定义角色与菜单权限；账号绑定在用户管理中完成</p>
       </div>
       <span class="u-label">{{ rows.length }} roles</span>
     </header>
@@ -53,7 +52,7 @@
     </el-dialog>
 
     <el-dialog v-model="grantVisible" :title="`分配权限：${grantRole?.name || ''}`" width="520px" :close-on-click-modal="!busy">
-      <p class="u-hint tree-tip">独立勾选节点；保存时会自动补齐页面所属目录。</p>
+      <p class="u-hint tree-tip">勾选角色可访问的节点，保存时自动补齐上级目录。</p>
       <el-tree
         ref="treeRef"
         :data="tree"

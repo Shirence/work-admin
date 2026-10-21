@@ -3,7 +3,7 @@
     <section class="panel forbidden">
       <div class="code mono">403</div>
       <h2>页面暂时无法访问</h2>
-      <p class="u-hint">当前账号没有该页面的权限，或权限接口暂时不可用。</p>
+      <p class="u-hint">当前账号没有该页面的访问权限。</p>
       <div class="actions">
         <el-button type="primary" @click="$router.push('/dashboard')">返回仪表盘</el-button>
         <el-button @click="refresh">刷新权限</el-button>

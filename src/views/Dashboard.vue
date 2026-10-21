@@ -3,7 +3,6 @@
     <header class="page-head">
       <div>
         <h2>概览</h2>
-        <p class="u-hint">真实统计数据，来自远程 MySQL 数据库</p>
       </div>
       <span class="u-label">{{ updatedLabel }}</span>
     </header>

@@ -9,30 +9,17 @@ import {
   House,
   User,
   UserFilled,
-  Plus,
-  Search,
-  Refresh,
-  Clock,
-  CircleCheck,
-  Bell,
-  SwitchButton,
+  Avatar,
   Menu,
   DataLine,
   ChatDotRound,
-  WarningFilled
+  Bell
 } from '@element-plus/icons-vue'
 import reveal from './directives/reveal'
 import { initTheme } from './utils/theme'
 
 // 主题在挂载前初始化，避免闪白/闪黑
 initTheme()
-
-// 是否启用 MockJS 假数据。默认关闭，直接走 Spring Boot 后端。
-// 需要离线演示时，把 .env 里的 VUE_APP_USE_MOCK 设为 true。
-if (process.env.VUE_APP_USE_MOCK === 'true') {
-  // eslint-disable-next-line global-require
-  require('./mock')
-}
 
 const app = createApp(App)
 
@@ -41,17 +28,11 @@ const icons = {
   House,
   User,
   UserFilled,
-  Plus,
-  Search,
-  Refresh,
-  Clock,
-  CircleCheck,
-  Bell,
-  SwitchButton,
+  Avatar,
   Menu,
   DataLine,
   ChatDotRound,
-  WarningFilled
+  Bell
 }
 Object.keys(icons).forEach(name => app.component(name, icons[name]))
 

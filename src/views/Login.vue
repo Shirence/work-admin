@@ -15,11 +15,11 @@
       <el-form ref="loginFormRef" :model="loginForm" size="large" class="form" @submit.prevent>
         <div class="field">
           <label class="u-label">账号</label>
-          <el-input v-model="loginForm.username" placeholder="stu 账号，例如 admin" clearable @keyup.enter="handleLogin" />
+          <el-input v-model="loginForm.username" placeholder="请输入账号" clearable @keyup.enter="handleLogin" />
         </div>
         <div class="field">
           <label class="u-label">密码</label>
-          <el-input v-model="loginForm.password" type="password" placeholder="123456" show-password @keyup.enter="handleLogin" />
+          <el-input v-model="loginForm.password" type="password" placeholder="请输入密码" show-password @keyup.enter="handleLogin" />
         </div>
         <button class="primary mono" type="button" :disabled="loading" @click="handleLogin">
           {{ loading ? 'SIGNING IN...' : 'SIGN IN' }}
@@ -27,14 +27,13 @@
       </el-form>
 
       <footer class="card-foot">
-        <span class="u-label">演示账号 admin · 密码 123456（stu 真实账号）</span>
         <span class="foot-links">
           <router-link class="link" to="/register">注册账号 →</router-link>
         </span>
       </footer>
     </div>
 
-    <p class="u-label copyright">Vue 3 · Element Plus · Spring Boot</p>
+    <p class="u-label copyright">© 2026 WORK ADMIN</p>
   </div>
 </template>
 
@@ -165,7 +164,7 @@ export default {
   border-top: 1px solid var(--line);
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 10px;
 }
 .link { font-size: 12px; color: var(--accent); text-decoration: none; white-space: nowrap; }

@@ -3,7 +3,6 @@
     <header class="page-head">
       <div>
         <h2>用户管理</h2>
-        <p class="u-hint">stu 项目的真实用户，数据在 MySQL 的 user 表；角色来自 sys_role</p>
       </div>
       <span class="u-label">{{ accounts.length }} users</span>
     </header>
@@ -11,8 +10,7 @@
     <section class="panel">
       <div class="toolbar">
         <div>
-          <h3>真实用户</h3>
-          <p class="u-hint">user · sys_user_role · 与 stu 共用账号</p>
+          <h3>用户列表</h3>
         </div>
         <div class="toolbar-right">
           <el-input
@@ -231,7 +229,7 @@ export default {
     async removeAccount(row) {
       if (this.saving) return
       try {
-        await this.$confirm(`删除用户 ${row.name || row.account}？会直接改动 MySQL 的 user 表`, '提示', { type: 'warning' })
+        await this.$confirm(`删除用户 ${row.name || row.account}？该操作不可撤销。`, '提示', { type: 'warning' })
         this.saving = true
         await deleteAccount(row.id)
         this.$message.success('用户已删除')

@@ -3,7 +3,6 @@
     <header class="page-head">
       <div>
         <h2>群聊</h2>
-        <p class="u-hint">读写 stu 的 chat_group / chat_member / chat_message，消息落库即双方可见</p>
       </div>
       <div class="head-actions">
         <span class="u-label">{{ groups.length }} groups</span>
@@ -52,7 +51,7 @@
             <div class="msg-head-main">
               <h3>{{ selectedGroup.name }}</h3>
               <p class="u-hint">
-                {{ selectedGroup.memberCount }} 位成员 · 群主 {{ selectedGroup.ownerName || '—' }} · GROUP #{{ selectedGroup.id }}
+                {{ selectedGroup.memberCount }} 位成员 · 群主 {{ selectedGroup.ownerName || '—' }}
               </p>
             </div>
             <div class="msg-head-actions">
@@ -100,7 +99,7 @@
               @keydown.enter="onEnter"
             />
             <div class="composer-foot">
-              <span class="u-hint">消息写入 chat_message，stu 前端同步可见</span>
+              <span class="u-hint">Enter 发送 · Shift + Enter 换行</span>
               <el-button type="primary" :loading="sending" :disabled="!canSend" @click="submit">发送</el-button>
             </div>
           </div>

@@ -95,7 +95,7 @@ stu 的聊天是**服务端明文**：WebSocket 收到消息直接写 `chat_mess
 
 ```bash
 curl -s --noproxy '*' -X POST http://127.0.0.1:8081/api/login \
-  -H 'Content-Type: application/json' -d '{"username":"admin","password":"123456"}'
+  -H 'Content-Type: application/json' -d '{"username":"<account>","password":"<password>"}'
 # 期望：permissions 含 "*"，roleCode=super_admin
 
 curl -s --noproxy '*' http://127.0.0.1:8081/api/users -H "token: <token>"

@@ -64,7 +64,7 @@ mvn spring-boot:run          # 或 java -jar target/work-admin-server-1.0.0.jar 
 
 # 登录拿 token
 TOKEN=$(curl -s --noproxy '*' -X POST http://127.0.0.1:8081/api/login \
-  -H 'Content-Type: application/json' -d '{"username":"admin","password":"123456"}' \
+  -H 'Content-Type: application/json' -d '{"username":"<account>","password":"<password>"}' \
   | sed -n 's/.*"token":"\([^"]*\)".*/\1/p')
 
 curl -s --noproxy '*' http://127.0.0.1:8081/api/groups -H "token: $TOKEN"

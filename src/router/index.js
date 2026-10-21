@@ -3,7 +3,7 @@ import { ElMessage } from 'element-plus'
 import store from '../store'
 import Layout from '../views/Layout.vue'
 
-// 第 10 课：页面组件改为路由懒加载（Layout 是公共骨架，保持静态导入）
+// 页面组件按路由懒加载（Layout 是公共骨架，保持静态导入）
 const routes = [
   {
     path: '/login',
@@ -71,7 +71,7 @@ const router = createRouter({
   routes
 })
 
-// 第 9 课：全局路由守卫 —— 登录校验 + 后端权限点控制
+// 全局路由守卫 —— 登录校验 + 后端权限点控制
 router.beforeEach(async to => {
   const token = store.state.token
 

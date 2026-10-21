@@ -37,12 +37,11 @@
       </el-form>
 
       <footer class="card-foot">
-        <span class="u-label">注册即写入 stu 的 user 表，默认 member 角色</span>
         <router-link class="link" to="/login">← 返回登录</router-link>
       </footer>
     </div>
 
-    <p class="u-label copyright">Vue 3 · Element Plus · Spring Boot</p>
+    <p class="u-label copyright">© 2026 WORK ADMIN</p>
   </div>
 </template>
 
@@ -213,7 +212,7 @@ export default {
   border-top: 1px solid var(--line);
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   gap: 10px;
 }
 .link { font-size: 12px; color: var(--accent); text-decoration: none; white-space: nowrap; }

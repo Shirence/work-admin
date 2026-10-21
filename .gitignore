@@ -11,16 +11,8 @@ pnpm-debug.log*
 # 后端（Spring Boot）构建产物
 server/target/
 
-# 旧 H2 文件库（已停用，仅留作备份，不提交）
-server/data/*.mv.db
-server/data/*.trace.db
-server/data/*.lock.db
-
 # 本地私密配置（数据库凭据等，不入库）
 server/application-local.yml
-
-# 界面截图（本地预览用）
-screenshots/
 
 # 工具本地状态（记忆、会话数据等）
 .workbuddy/

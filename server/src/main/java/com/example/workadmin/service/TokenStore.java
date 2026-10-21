@@ -8,8 +8,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 极简 token 存储（内存版）。
- * 教学项目够用；真实项目请换成 JWT / Redis / Spring Security。
+ * 极简 token 存储（内存版）：进程重启即失效。
  */
 @Component
 public class TokenStore {
