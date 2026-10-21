@@ -63,11 +63,11 @@ npm run serve
 | 路由 | Vue Router 4，**history 模式** |
 | 请求 | Axios（封装在 `src/api/request.js`） |
 | 图表 | ECharts 5 |
-| 端到端加密 | `@privacyresearch/libsignal-protocol-typescript`（X3DH + Double Ratchet，浏览器本地密钥） |
+| 群聊 | 与 stu 共用 `chat_group` / `chat_member` / `chat_message`，服务端明文 + 5 秒轮询 |
 | 主题 | light / dark 双主题，`localStorage.workadmin-theme`，`ThemeToggle.vue` 全局切换 |
 | Mock | MockJS（可通过开关关闭） |
 | 构建 | Vue CLI 5（webpack 5）+ Babel |
-| 后端 | Spring Boot 3.5.16 + Spring Web + Spring Data JPA + Bean Validation |
+| 后端 | Spring Boot 3.5.16 + Spring Web + Spring JDBC（JdbcTemplate 显式 SQL）+ Bean Validation |
 | 数据库 | 远程 MySQL 8.0（`118.25.25.164:3306/demo`，账号 `stu`）；本项目表带 `wa_` 前缀，与同库其他项目隔离 |
 | 密码 | 与 stu 完全一致的三重 MD5（`md5(md5(md5(pwd)))`），登录兼容历史单次 MD5 |
 | JDK / Maven | JDK 17+（本机用 jdk-22）；Maven 3.9.16 |
@@ -107,7 +107,7 @@ work-admin/
 │   │   ├── auth.js             # login / register / logout / getMe
 │   │   ├── user.js             # getUserList / addUser / editUser / delUser
 │   │   ├── dashboard.js        # /dashboard/stats 真实统计
-│   │   └── chat.js             # 本地 E2EE 聊天 API（设备/会话/消息）
+│   │   └── groups.js           # 群聊 API（群列表/消息/发送/建群/加群）
 │   ├── components/
 │   │   ├── UserFormDialog.vue  # 用户弹窗表单（自定义 v-model）
 │   │   ├── AvatarUpload.vue    # 本地头像预览（Blob URL + 释放）
@@ -122,9 +122,6 @@ work-admin/
 │   ├── store/
 │   │   └── index.js            # Vuex：token / userInfo，localStorage 双写
 │   ├── utils/
-│   │   ├── bytes.js            # ArrayBuffer/Base64
-│   │   ├── signalStore.js      # libsignal StorageType 的 localStorage 实现
-│   │   ├── chatCrypto.js       # 设备密钥生成、会话建立、逐设备加解密
 │   │   └── theme.js            # light/dark 主题持久化与切换
 │   ├── components/
 │   │   └── ThemeToggle.vue     # light/dark 主题切换按钮
@@ -133,7 +130,7 @@ work-admin/
 │   │   ├── Login.vue
 │   │   ├── Register.vue
 │   │   ├── Dashboard.vue       # Bento 栅格 + ECharts + /api/dashboard/stats 真实统计
-│   │   ├── Chat.vue            # 本地 E2EE 消息页（设备初始化/会话/收发）
+│   │   ├── Chat.vue            # 群聊页（群列表 + 消息流 + 发送 + 成员/建群）
 │   │   ├── User.vue
 │   │   ├── Roles.vue           # 角色 CRUD + 权限树
 │   ├── App.vue                 # 设计系统 tokens + 全局样式（关键！）
@@ -229,13 +226,11 @@ com.example.workadmin
 - 主库：**远程 MySQL** `118.25.25.164:3306/demo`，账号 `stu`
 - 凭据放 `server/application-local.yml`（已 gitignore，模板 `server/application-local.yml.example`），
   也可用 `DB_URL` / `DB_USERNAME` / `DB_PASSWORD` 环境变量覆盖
-- 账号/角色/菜单直接用 stu 的真实表（`user`、`sys_role`、`sys_user_role`、`sys_menu`、`sys_role_menu`），
-  由 `StuStore` 用显式 SQL 读写，不挂 JPA 实体；
-- 中台只剩 E2EE 相关表带 **`wa_` 前缀**（`wa_chat_message`、`wa_chat_device` …）；
-  旧的 `wa_sys_account` / `wa_sys_role` / `wa_sys_menu` / `wa_sys_user` 已停用（表还在库里，无 DROP 权限）
-- H2 只用于集成测试（`test` scope 依赖 + 内存库 `jdbc:h2:mem:chat-test`），运行期不加载
-- `spring.jpa.hibernate.ddl-auto=update`，首次连空库自动建 16 张 `wa_*` 表
-- `wa_sys_user` 种子：张三、李四
+- 账号/角色/菜单/群聊直接用 stu 的真实表（`user`、`sys_role`、`sys_user_role`、`sys_menu`、`sys_role_menu`、
+  `chat_group`、`chat_member`、`chat_message`），由 `StuStore` 用显式 SQL 读写；
+- 项目**不引入 JPA**，也不建任何自己的表，所以永远不会 `ALTER` 到别人的表结构；
+  历史遗留的 `wa_sys_*` / `wa_chat_*` 表仍在库里但已无代码引用（`stu` 账号没有 DROP 权限）
+- H2 只用于集成测试（`test` scope 依赖 + 内存库 `jdbc:h2:mem:groupchat-test`），运行期不加载
 - 不再种子任何账号：登录直接用 stu 已有用户，`admin` 的密码就是 123456
 
 ### 5.6 注册校验规则（前后端一致）
@@ -255,23 +250,21 @@ com.example.workadmin
 - ❌ **没有接口级角色鉴权**（只校验「有没有登录」；聊天管理员接口除外），前端 `v-if` 按钮权限只是 UI
 - ❌ 无 HTTPS / 限流 / 审计日志
 
-### 5.8 聊天模块（E2EE / 多设备）
+### 5.8 群聊模块（与 stu 共用数据）
 
-聊天后端已按以下模型实现，完整接口见 [`server/CHAT_API.md`](server/CHAT_API.md)：
+完整接口见 [`server/CHAT_API.md`](server/CHAT_API.md)，设计取舍见 [`ARCHITECTURE.md`](ARCHITECTURE.md) 第 4 节。
 
-- 设备：`chat_device`、`chat_one_time_pre_key`、`chat_device_link`、`chat_device_grant`
-- 会话：`chat_conversation`（`version` 群版本号）、`chat_member`、`chat_read_cursor`
-- 消息：`chat_message`（`clientMessageId` 幂等 + 服务端 `serverSeq` 定序）、`chat_envelope`（逐设备密文）
-- 建群权限：`chat_group_policy`（全局）+ `chat_account_group_permission`（账号覆盖）
-- 服务端只存密文；新设备 PENDING，必须由已有 ACTIVE 设备授权后才能同步
-- 集成测试：`server/src/test/java/com/example/workadmin/ChatFlowIntegrationTest.java`（12 项）
-- 本地 E2EE 消息页：`/chat` 首次进入生成 identity key / signed pre-key / one-time pre-key，
-  私钥只存浏览器 `localStorage`（按 clientDeviceKey 隔离）；发送时对每个目标设备
-  `SessionCipher.encrypt`，每条消息生成多个 `chat_envelope`。
-- 新设备：第二台设备注册后为 PENDING，现有设备在「设备」对话框批准后激活；
-  批准前无法同步，批准后只能解密之后发给它的消息（旧消息需额外历史密钥授权）。
-- Vue 构建：`vue.config.js` 里给 libsignal 的 curve25519 wasm 包设置 `resolve.fallback.fs=false`。
-- 消息只落在 MySQL，服务端只存逐设备密文。
+- 数据表：`chat_group`、`chat_member`、`chat_message`（全部属于 stu，明文存储）
+- 接口：`GET /api/groups`、`GET /api/groups/candidates`、`GET /api/groups/{id}`、
+  `GET/POST /api/groups/{id}/messages`、`POST /api/groups`、`POST /api/groups/{id}/join`
+- 权限点：`chat:access`；读写的群必须是成员（`super_admin` 可旁路查看）
+- 发送幂等：`client_message_id` 重复提交只落一条
+- 页面：`/chat` 左侧群列表 + 右侧消息流，5 秒轮询，Enter 发送
+- 集成测试：`server/src/test/java/com/example/workadmin/GroupChatIntegrationTest.java`（8 项）
+
+**为什么没有端到端加密**：stu 的 WebSocket 直接把明文写进 `chat_message`，
+E2EE 只能保护中台自己那份 `wa_chat_*` 数据，真实消息永远显示不出来；
+而且多设备模型要求老设备授权，浏览器首登会卡在 PENDING。整套 E2EE（含 libsignal 依赖）已移除。
 
 ### 5.9 RBAC：角色、菜单、按钮权限
 
@@ -325,7 +318,7 @@ Spring Boot
 /register   → Register.vue         （白名单）
 /           → Layout.vue  redirect /dashboard
    ├─ dashboard → Dashboard.vue  meta:{title:'仪表盘', icon:'House', menu:true, permission:'dashboard:view'}
-   ├─ chat      → Chat.vue       meta:{title:'消息', icon:'ChatDotRound', menu:true, permission:'chat:access'}
+   ├─ chat      → Chat.vue       meta:{title:'群聊', icon:'ChatDotRound', menu:true, permission:'chat:access'}
    ├─ user      → User.vue       meta:{title:'用户管理', icon:'User', menu:true, permission:'user:read'}
    ├─ roles     → Roles.vue      meta:{title:'角色管理', icon:'Avatar', menu:true, permission:'role:read'}
    ├─ menus     → Menus.vue      meta:{title:'菜单管理', icon:'Menu', menu:true, permission:'menu:read'}
@@ -458,7 +451,7 @@ html {
 | `Roles.vue` | 角色 CRUD + 权限树（独立勾选，保存自动补祖先） |
 | `Menus.vue` | 目录/页面/按钮 CRUD，树形表格 |
 | `Forbidden.vue` | 无权限页，可刷新权限 |
-| `Chat.vue` | 本地 E2EE 消息页（设备初始化/会话/收发） |
+| `Chat.vue` | 群聊页：左侧群列表、右侧消息流（自己靠右）、Enter 发送、成员抽屉、新建群 |
 
 ### 7.6 注意
 
@@ -500,7 +493,7 @@ npx serve -s dist           # 本地预览 dist（-s 必须有，history 模式�
 | **停掉后端再操作** | 前端报「获取列表失败」/ 500，说明确实依赖后端 |
 | **MySQL 直查** | 连 `118.25.25.164/demo` 查 `user`（27 条）/ `sys_role` / `chat_message`，能看到接口写入的数据 |
 | **重启后端** | 数据在 MySQL 里，重启后端不会复位 |
-| **本地 E2EE 消息** | 登录后进入 `/chat`，首次会生成设备密钥；发送消息后 Network 里 `/api/chat/messages` 的 envelopes 是密文，接收端能显示明文即说明 libsignal 链路生效 |
+| **群聊真实数据** | 登录后进入 `/chat`，左侧应出现 stu 的群和最后一条消息；发一条后到 MySQL 的 `chat_message` 里能查到明文行 |
 | **双主题** | 右上角 `LIGHT / DARK` 切换，刷新后保持；Dashboard 图表、Element Plus 表格/弹窗颜色一起变化 |
 | **curl 直连** | `Invoke-RestMethod http://localhost:8081/api/health` |
 
@@ -523,6 +516,8 @@ npx serve -s dist           # 本地预览 dist（-s 必须有，history 模式�
 10. **RBAC**：`sys_role` / `sys_menu` / `sys_role_menu`、`@RequirePermission`、`/api/auth/access`、角色页与菜单页。
 11. **E2EE 聊天**：libsignal 设备/会话/逐设备密文、已读游标、群权限。
 12. **下线远程 MySQL 账号模块**：移除外部租户账号登录、远程群聊、`remote-admin` 接口、`mysql-connector-j` 与 `application-local.yml`；本地账号管理改为单列表，启动时清理遗留 `remote:*` 权限节点。
+13. **统一到 stu 真实数据**：删掉自建账号体系，登录/权限/用户/角色/菜单全部走 stu 的表（`StuStore` 显式 SQL，无 JPA）。
+14. **消息页改成真实群聊**：移除 E2EE（`wa_chat_*` + libsignal + 12 项旧测试），新增 `/api/groups` 与全新的 `Chat.vue`，中台与 stu 共用 `chat_group` / `chat_member` / `chat_message`。
 
 **当前 git 提交（从旧到新，节选）**：
 

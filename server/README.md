@@ -2,8 +2,8 @@
 
 [`work-admin`](..) 工作管理中台的后端 API，位于 `work-admin/server/`。
 
-- Spring Boot 3.5.16 + Spring Web + Spring Data JPA + Bean Validation
-- 远程 MySQL 8.0（本项目表带 `wa_` 前缀，与同库其他项目隔离）
+- Spring Boot 3.5.16 + Spring Web + Spring JDBC（JdbcTemplate 显式 SQL）+ Bean Validation
+- 远程 MySQL 8.0（直接复用 stu 的 `user` / `sys_*` / `chat_*` 表，不建自己的表）
 - 统一响应体 `{ code, msg, data }`，与前端 axios 拦截器约定一致
 - 请求头 `token` 鉴权（内存 token）
 
@@ -48,25 +48,29 @@ work-admin-server/
 └── src/main/
     ├── java/com/example/workadmin/
     │   ├── WorkAdminApplication.java        # 启动类
-    │   ├── common/
-    │   │   ├── Result.java                  # 统一响应 { code, msg, data }
-    │   │   ├── BizException.java            # 业务异常
-    │   │   └── GlobalExceptionHandler.java  # 异常 -> Result
+    │   ├── common/                          # Result / BizException / @RequirePermission / GlobalExceptionHandler / StuPassword
     │   ├── config/
     │   │   ├── WebConfig.java               # 注册拦截器 + CORS
-    │   │   ├── AuthInterceptor.java         # 校验请求头 token
-    │   │   └── DataInitializer.java         # 启动时插入张三、李四
+    │   │   └── AuthInterceptor.java         # 校验请求头 token
     │   ├── controller/
     │   │   ├── AuthController.java          # /api/login /register /logout /me /health
-    │   │   └── UserController.java          # /api/user/*
-    │   ├── dto/                             # 请求 / 响应对象
-    │   ├── entity/User.java                 # 用户表 sys_user
-    │   ├── repository/UserRepository.java   # Spring Data JPA
+    │   │   ├── AccessController.java        # /api/auth/access、/api/users（真实用户 CRUD）
+    │   │   ├── RoleController.java          # /api/roles
+    │   │   ├── MenuController.java          # /api/menus
+    │   │   ├── DashboardController.java     # /api/dashboard/stats
+    │   │   └── GroupChatController.java     # /api/groups（群列表 / 消息 / 发送 / 建群 / 加群）
+    │   ├── dto/                             # 请求 / 响应对象（含 GroupChatDtos）
+    │   ├── entity/                          # Account / Role / Menu，纯值对象（无 JPA 注解）
     │   └── service/
-    │       ├── AuthService.java             # 演示账号 + 权限
-    │       ├── TokenStore.java              # 内存 token
-    │       └── UserService.java             # 用户 CRUD
-    └── resources/application.yml            # 端口 8081 / MySQL 数据源 / JPA
+    │       ├── AuthService.java             # 登录/注册：user 表 + 三重 MD5
+    │       ├── AccessService.java           # 角色 / 权限点 / 菜单装配
+    │       ├── RoleService.java             # 用户与角色 CRUD
+    │       ├── MenuService.java             # 菜单 CRUD
+    │       ├── GroupChatService.java        # 群聊业务
+    │       ├── DashboardService.java        # 真实统计
+    │       ├── StuStore.java                # ★ 唯一允许写 stu 表 SQL 的地方
+    │       └── TokenStore.java              # 内存 token
+    └── resources/application.yml            # 端口 8081 / MySQL 数据源
 ```
 
 ---
@@ -161,11 +165,12 @@ curl -s http://localhost:8081/api/user/list -H "token: $TOKEN"
 
 - 凭据放 `server/application-local.yml`（已 gitignore），模板见 `server/application-local.yml.example`；
   也可用环境变量 `DB_URL` / `DB_USERNAME` / `DB_PASSWORD` 覆盖。
-- 本项目所有表统一 `wa_` 前缀：`wa_sys_account`、`wa_sys_role`、`wa_sys_menu`、`wa_chat_message` …
-  同库里 stu 项目的 `sys_role` / `chat_message` / `user` 表不受影响。
-- `spring.jpa.hibernate.ddl-auto=update`，连上空库首次启动会自动建 16 张 `wa_*` 表，
-  并种入 admin / manager / viewer（密码 123456）。
-- H2 只作为集成测试的内存库（`test` scope），运行期不加载。
+- **不建任何自己的表**：账号/角色/菜单/群聊全部直接用 stu 的 `user`、`sys_role`、`sys_user_role`、
+  `sys_menu`、`sys_role_menu`、`chat_group`、`chat_member`、`chat_message`。
+- 数据访问只有一层 `StuStore`（`JdbcTemplate` + 显式 SQL），项目不引 JPA，
+  不存在 `ddl-auto` 去改别人表结构的可能。
+- 登录用 stu 已有账号（`admin` / 123456），不再种入任何账号。
+- H2 只作为集成测试的内存库（`test` scope），测试用 `src/test/resources/schema.sql` 造表，不碰远程库。
 
 ---
 

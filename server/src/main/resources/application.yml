@@ -14,7 +14,8 @@ spring:
       - optional:file:./application-local.yml
       - optional:file:./server/application-local.yml
   datasource:
-    # 主库：远程 MySQL（demo 库）。本项目的表统一带 wa_ 前缀，不会和同库其他项目冲突。
+    # 主库：远程 MySQL（demo 库）。账号/角色/菜单/群聊都直接用 stu 的真实表，
+    # 项目不建自己的表，也不引入 JPA，所以永远不会改动对方的表结构。
     url: ${DB_URL:jdbc:mysql://118.25.25.164:3306/demo?useUnicode=true&characterEncoding=UTF-8&useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=Asia/Shanghai&connectTimeout=8000&socketTimeout=20000}
     username: ${DB_USERNAME:stu}
     password: ${DB_PASSWORD:}
@@ -24,16 +25,6 @@ spring:
       minimum-idle: 2
       connection-timeout: 10000
       connection-test-query: SELECT 1
-  jpa:
-    hibernate:
-      # 首次运行自动建表；生产建议改为 validate 并用 SQL 脚本管理
-      ddl-auto: update
-    open-in-view: false
-    show-sql: false
-    properties:
-      hibernate:
-        jdbc:
-          time_zone: Asia/Shanghai
 
 logging:
   level:

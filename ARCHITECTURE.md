@@ -1,19 +1,20 @@
 # 底层架构（重新整理版）
 
 > 这份文档定义「谁拥有数据、代码怎么分层、接口边界在哪」。
-> 之前的问题出在：中台自带了一套账号/角色/菜单（`wa_sys_*`），又去读写 stu 的真实表，
-> 两套身份体系并存，导致「连了远程库却只有 3 个假用户」。现在统一为一套。
+> 两次返工的根因都是同一件事：中台自己又造了一套数据（`wa_sys_*` 账号体系、`wa_chat_*` 端到端加密会话），
+> 和 stu 的真实数据并行存在，于是「连了远程库却只有 3 个假用户」「消息页看不到真实群消息」。
+> 现在只有一套数据：**全部来自 stu 的真表**。
 
-## 1. 数据归属：谁的表，谁负责
+## 1. 数据归属：只用 stu 的表，一行都不自己建
 
-| 归属 | 表 | 中台怎么用 |
+| 用途 | 表（全部属于 stu） | 中台怎么用 |
 |---|---|---|
-| **stu 项目（共享，真实数据）** | `user`、`sys_role`、`sys_user_role`、`sys_menu`、`sys_role_menu` | **只通过 `StuStore` 的显式 SQL 读写**，不挂 JPA 实体，绝不让 Hibernate 去改表结构 |
-| **stu 项目（业务数据）** | `chat_group`、`chat_member`、`chat_message` | 同上，只读统计 + 展示 |
-| **中台自有** | `wa_chat_*`（设备、会话、密文信封等 E2EE 表） | 正常 JPA 实体 + Repository，`ddl-auto=update` 只管这些表 |
+| 账号 / 角色 / 权限 / 菜单 | `user`、`sys_role`、`sys_user_role`、`sys_menu`、`sys_role_menu` | **只通过 `StuStore` 的显式 SQL 读写** |
+| 群聊 | `chat_group`、`chat_member`、`chat_message` | 同上，读写统一的聊天数据 |
 
-结论：**账号、角色、菜单、群聊消息全部是 stu 的真实数据**，中台不再有「本地用户」这个概念。
-`wa_sys_account` / `wa_sys_role` / `wa_sys_menu` / `wa_sys_role_menu` / `wa_sys_user` 已停用（表保留在库里，没有 DROP 权限，也不再被任何代码引用）。
+- 项目**不引入 JPA**（`spring-boot-starter-jdbc` + `JdbcTemplate` 显式 SQL），
+  所以不存在 `ddl-auto` 去 `ALTER` 别人家表的风险。
+- 也没有任何自建表：`wa_sys_*`、`wa_chat_*` 都是历史遗留，代码已完全不引用（表还在库里，`stu` 账号没有 DROP 权限）。
 
 ## 2. 代码分层
 
@@ -25,10 +26,10 @@ service/           业务规则都在这一层
    ├─ AccessService      身份装配：user → sys_user_role → sys_role → sys_role_menu，产出权限点
    ├─ RoleService        用户 CRUD + 角色 CRUD + 授权
    ├─ MenuService        sys_menu CRUD
+   ├─ GroupChatService   群列表 / 历史消息 / 发送 / 建群 / 加群
    ├─ DashboardService   真实计数
    └─ StuStore           ★ 唯一允许出现 stu 表 SQL 的地方
-repository/        只有中台自己的 wa_chat_* 才允许出现 Spring Data 仓储
-entity/            Account / Role / Menu 已降级为**值对象**（无 JPA 注解），只用于层间传递
+entity/            Account / Role / Menu 是**值对象**（无 JPA 注解），只用于层间传递
 dto/               对外契约，字段与前端一一对应
 ```
 
@@ -43,9 +44,30 @@ dto/               对外契约，字段与前端一一对应
 - 权限点：`sys_role_menu` → `sys_menu.permission`。
   - `super_admin` 在 `sys_role_menu` 里没有逐条授权，按约定直接给 `*`。
   - 所有登录用户额外获得基础权限 `dashboard:view`，否则 `member` 连概览页都进不去。
-- 权限校验：`@RequirePermission` + `AuthInterceptor` → `AccessService.require`，逻辑不变。
+- 权限校验：`@RequirePermission` + `AuthInterceptor` → `AccessService.require`。
 
-## 4. 接口边界（前端只认这些）
+## 4. 群聊为什么不做端到端加密
+
+stu 的聊天是**服务端明文**：WebSocket 收到消息直接写 `chat_message.content`，
+其他客户端读同一张表再渲染。中台要和它共用一份会话，就只能读明文。
+
+之前那套 E2EE（`wa_chat_*` + libsignal）有两个死结：
+
+1. 它只加密中台自己写进 `wa_chat_*` 的消息，stu 的 35 条真实消息在另一张表里，永远显示不出来；
+2. 多设备模型要求「新设备由老设备授权」，账号在浏览器里首次登录根本没有授权方，页面就卡在 PENDING。
+
+所以 E2EE 整套已移除（含 `libsignal` 依赖、7 个控制器、4 个服务、11 张表映射与 12 项集成测试），
+换来一条真正可用的链路：**中台发的消息 stu 能看到，stu 发的消息中台能看到**。
+
+群聊接口规则：
+
+- `GET /api/groups`：普通用户只看自己加入的群；`super_admin` 看全站群组（带 `joined` 标记）。
+- `GET /api/groups/{id}/messages`：必须是群成员（`super_admin` 例外），按 `id` 升序返回，`beforeId` 向上翻页。
+- `POST /api/groups/{id}/messages`：`client_message_id` 去重，重复提交不会产生第二条。
+- `POST /api/groups`：建群同时把群主和邀请的人写进 `chat_member`。
+- 权限点统一 `chat:access`（对应 `sys_menu` 里「群组聊天」）。
+
+## 5. 接口边界（前端只认这些）
 
 | 能力 | 接口 | 数据来源 |
 |---|---|---|
@@ -55,20 +77,21 @@ dto/               对外契约，字段与前端一一对应
 | 角色管理 | `/api/roles`（含 `/options`、`/{id}/permissions`） | `sys_role` + `sys_role_menu` |
 | 菜单管理 | `/api/menus`（含 `/permission-tree`） | `sys_menu` |
 | 仪表盘 | `GET /api/dashboard/stats` | `user` / `chat_group` / `chat_message` / `chat_member` |
-| E2EE 聊天 | `/api/chat/**` | `wa_chat_*` |
+| 群聊 | `/api/groups`（列表、`/candidates`、`/{id}`、`/{id}/messages`、`/{id}/join`） | `chat_group` / `chat_member` / `chat_message` |
 
-用户行字段从「username + email + enabled」改为真实的「name + account + 角色」：
+用户行字段是真实的「name + account + 角色」：
 `stu.user` 只有 `id / name / account / passwd` 四列，没有邮箱、没有启停位，接口不再假装有。
 
-## 5. 安全与护栏
+## 6. 安全与护栏
 
 - 删除用户：不能删自己、不能删最后一个 `super_admin`、不能删还有群聊数据的用户。
 - 修改/删除 `super_admin` 账号：只有 `super_admin` 本人可以操作。
 - 角色：内置角色（`builtin=1`）不能删除、不能改编码、不能停用；仍有用户绑定时不能删。
 - `super_admin` 不走逐条授权（否则一旦误删 `sys_role_menu` 就会把自己锁死）。
 - 数据库账号 `stu` 没有 DROP 权限：任何「删表」都不可能发生，代码里也不做这类操作。
+- 群聊发送只接受登录用户，内容长度上限 2000 字，发送者身份取自 token 而非请求体。
 
-## 6. 迁移后的自检清单
+## 7. 自检清单
 
 ```bash
 curl -s --noproxy '*' -X POST http://127.0.0.1:8081/api/login \
@@ -76,8 +99,16 @@ curl -s --noproxy '*' -X POST http://127.0.0.1:8081/api/login \
 # 期望：permissions 含 "*"，roleCode=super_admin
 
 curl -s --noproxy '*' http://127.0.0.1:8081/api/users -H "token: <token>"
-# 期望：27 条真实用户（id 50 起），带 name / account / roleName
+# 期望：真实用户列表（id 50 起），带 name / account / roleName
 
-curl -s --noproxy '*' http://127.0.0.1:8081/api/dashboard/stats -H "token: <token>"
-# 期望：用户 27、群组 10、消息 16、成员 49
+curl -s --noproxy '*' http://127.0.0.1:8081/api/groups -H "token: <token>"
+# 期望：stu 的真实群组，带 memberCount / lastMessage
+
+curl -s --noproxy '*' "http://127.0.0.1:8081/api/groups/1/messages?limit=10" -H "token: <token>"
+# 期望：该群的真实历史消息，mine 标记自己发的
+
+curl -s --noproxy '*' -X POST http://127.0.0.1:8081/api/groups/1/messages \
+  -H "token: <token>" -H 'Content-Type: application/json' \
+  -d '{"content":"hello","clientMessageId":"self-check-1"}'
+# 期望：code=200，消息进 chat_message，stu 前端同步可见
 ```

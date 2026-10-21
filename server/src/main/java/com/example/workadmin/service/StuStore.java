@@ -311,6 +311,199 @@ public class StuStore {
         return ids;
     }
 
+    // ---------- 群聊（stu 的 chat_group / chat_member / chat_message） ----------
+
+    public record StuGroup(long id, String name, long ownerId, String ownerName,
+                           LocalDateTime createdAt, long memberCount,
+                           String lastContent, String lastSenderName, LocalDateTime lastAt) {
+    }
+
+    public record StuMessage(long id, long groupId, long senderId, String senderName,
+                             String content, String clientMessageId, LocalDateTime sentAt) {
+    }
+
+    public record StuMember(long userId, String name, String account,
+                            LocalDateTime joinedAt, boolean owner) {
+    }
+
+    private static final String GROUP_SELECT = """
+            select g.id, g.name, g.owner_id, o.name as owner_name, g.created_at,
+                   (select count(*) from chat_member m where m.group_id = g.id) as member_count,
+                   lm.content as last_content,
+                   lm.sender_name as last_sender_name,
+                   lm.sent_at as last_at
+            from chat_group g
+            left join user o on o.id = g.owner_id
+            left join chat_message lm
+                   on lm.id = (select max(x.id) from chat_message x where x.group_id = g.id)
+            """;
+
+    private final RowMapper<StuGroup> groupMapper = (rs, i) -> {
+        java.sql.Timestamp lastAt = rs.getTimestamp("last_at");
+        java.sql.Timestamp createdAt = rs.getTimestamp("created_at");
+        return new StuGroup(
+                rs.getLong("id"),
+                rs.getString("name"),
+                rs.getLong("owner_id"),
+                rs.getString("owner_name"),
+                createdAt == null ? null : createdAt.toLocalDateTime(),
+                rs.getLong("member_count"),
+                rs.getString("last_content"),
+                rs.getString("last_sender_name"),
+                lastAt == null ? null : lastAt.toLocalDateTime());
+    };
+
+    private final RowMapper<StuMessage> messageMapper = (rs, i) -> {
+        java.sql.Timestamp sentAt = rs.getTimestamp("sent_at");
+        return new StuMessage(
+                rs.getLong("id"),
+                rs.getLong("group_id"),
+                rs.getLong("sender_id"),
+                rs.getString("sender_name"),
+                rs.getString("content"),
+                rs.getString("client_message_id"),
+                sentAt == null ? null : sentAt.toLocalDateTime());
+    };
+
+    /** 群列表：userId 为 null 表示不按成员过滤（管理员视角）。 */
+    public List<StuGroup> listGroups(Long userId) {
+        if (userId == null) {
+            return jdbc.query(GROUP_SELECT + " order by coalesce(lm.sent_at, g.created_at) desc", groupMapper);
+        }
+        return jdbc.query(GROUP_SELECT + """
+                 where exists (select 1 from chat_member mm where mm.group_id = g.id and mm.user_id = ?)
+                 order by coalesce(lm.sent_at, g.created_at) desc
+                """, groupMapper, userId);
+    }
+
+    public Optional<StuGroup> findGroup(long groupId) {
+        List<StuGroup> rows = jdbc.query(GROUP_SELECT + " where g.id = ?", groupMapper, groupId);
+        return rows.isEmpty() ? Optional.empty() : Optional.of(rows.get(0));
+    }
+
+    public List<StuMember> groupMembers(long groupId) {
+        return jdbc.query("""
+                select m.user_id, u.name, u.account, m.joined_at, g.owner_id
+                from chat_member m
+                join user u on u.id = m.user_id
+                join chat_group g on g.id = m.group_id
+                where m.group_id = ?
+                order by (m.user_id = g.owner_id) desc, m.joined_at asc, m.user_id asc
+                """, (rs, i) -> {
+            java.sql.Timestamp joinedAt = rs.getTimestamp("joined_at");
+            long userId = rs.getLong("user_id");
+            return new StuMember(userId,
+                    rs.getString("name"),
+                    rs.getString("account"),
+                    joinedAt == null ? null : joinedAt.toLocalDateTime(),
+                    userId == rs.getLong("owner_id"));
+        }, groupId);
+    }
+
+    public boolean isMember(long groupId, long userId) {
+        Long v = jdbc.queryForObject(
+                "select count(*) from chat_member where group_id = ? and user_id = ?", Long.class, groupId, userId);
+        return v != null && v > 0;
+    }
+
+    /** 按 id 倒序取最近 limit 条，返回时按 id 升序（便于直接渲染）。 */
+    public List<StuMessage> listMessages(long groupId, Long beforeId, int limit) {
+        List<StuMessage> rows;
+        if (beforeId == null) {
+            rows = jdbc.query("""
+                    select id, group_id, sender_id, sender_name, content, client_message_id, sent_at
+                    from chat_message where group_id = ? order by id desc limit ?
+                    """, messageMapper, groupId, limit);
+        } else {
+            rows = jdbc.query("""
+                    select id, group_id, sender_id, sender_name, content, client_message_id, sent_at
+                    from chat_message where group_id = ? and id < ? order by id desc limit ?
+                    """, messageMapper, groupId, beforeId, limit);
+        }
+        List<StuMessage> asc = new ArrayList<>(rows);
+        java.util.Collections.reverse(asc);
+        return asc;
+    }
+
+    public boolean messageIdExists(long groupId, String clientMessageId) {
+        if (clientMessageId == null || clientMessageId.isBlank()) return false;
+        Long v = jdbc.queryForObject(
+                "select count(*) from chat_message where group_id = ? and client_message_id = ?",
+                Long.class, groupId, clientMessageId);
+        return v != null && v > 0;
+    }
+
+    public StuMessage insertMessage(long groupId, long senderId, String senderName,
+                                    String content, String clientMessageId) {
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbc.update(con -> {
+            PreparedStatement ps = con.prepareStatement("""
+                    insert into chat_message (group_id, sender_id, sender_name, content, client_message_id)
+                    values (?, ?, ?, ?, ?)
+                    """, Statement.RETURN_GENERATED_KEYS);
+            ps.setLong(1, groupId);
+            ps.setLong(2, senderId);
+            ps.setString(3, senderName);
+            ps.setString(4, content);
+            ps.setString(5, clientMessageId);
+            return ps;
+        }, keyHolder);
+        Number key = generatedId(keyHolder);
+        long id = key == null ? 0 : key.longValue();
+        return jdbc.query("""
+                select id, group_id, sender_id, sender_name, content, client_message_id, sent_at
+                from chat_message where id = ?
+                """, messageMapper, id).stream().findFirst()
+                .orElse(new StuMessage(id, groupId, senderId, senderName, content, clientMessageId, LocalDateTime.now()));
+    }
+
+    public long createGroup(String name, long ownerId, List<Long> memberIds) {
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbc.update(con -> {
+            PreparedStatement ps = con.prepareStatement(
+                    "insert into chat_group (name, owner_id) values (?, ?)", Statement.RETURN_GENERATED_KEYS);
+            ps.setString(1, name);
+            ps.setLong(2, ownerId);
+            return ps;
+        }, keyHolder);
+        Number key = generatedId(keyHolder);
+        long groupId = key == null ? 0 : key.longValue();
+        addMember(groupId, ownerId);
+        for (Long userId : memberIds) {
+            if (userId != null && userId != ownerId) addMember(groupId, userId);
+        }
+        return groupId;
+    }
+
+    public void addMember(long groupId, long userId) {
+        if (isMember(groupId, userId)) return;
+        // joined_after_id / history_start_id 是 stu 自己的游标，新成员从 0 开始可见全部历史
+        jdbc.update("""
+                insert into chat_member (group_id, user_id, joined_after_id, history_start_id)
+                values (?, ?, 0, 0)
+                """, groupId, userId);
+    }
+
+    /**
+     * 取自增主键。
+     * MySQL 只回一个 GENERATED_KEY，H2 会把带默认值的列（如 sent_at）一起回，
+     * 这时 {@code getKey()} 会直接抛异常，所以统一按列名找 id。
+     */
+    private Number generatedId(KeyHolder keyHolder) {
+        for (Map<String, Object> row : keyHolder.getKeyList()) {
+            for (Map.Entry<String, Object> entry : row.entrySet()) {
+                if ("id".equalsIgnoreCase(entry.getKey()) && entry.getValue() instanceof Number n) {
+                    return n;
+                }
+            }
+        }
+        try {
+            return keyHolder.getKey();
+        } catch (RuntimeException e) {
+            return null;
+        }
+    }
+
     private List<StuUser> dedupeById(List<StuUser> rows) {
         Map<Long, StuUser> byId = new LinkedHashMap<>();
         for (StuUser row : rows) {

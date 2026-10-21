@@ -30,7 +30,7 @@ const routes = [
         path: 'chat',
         name: 'Chat',
         component: () => import('../views/Chat.vue'),
-        meta: { title: '消息', icon: 'ChatDotRound', menu: true, permission: 'chat:access' }
+        meta: { title: '群聊', icon: 'ChatDotRound', menu: true, permission: 'chat:access' }
       },
       {
         path: 'user',

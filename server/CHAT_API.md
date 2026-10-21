@@ -1,196 +1,94 @@
-# 聊天后端 API（E2EE / 多设备 / 多端同步）
+# 群聊后端 API
 
-> 实现位置：`server/src/main/java/com/example/workadmin`
-> 测试：`server/src/test/java/com/example/workadmin/ChatFlowIntegrationTest.java`（12 项，已通过）
-> 最后验证：2026-10-19
+中台的「群聊」页和 stu 项目共用同一份数据：`chat_group` / `chat_member` / `chat_message`。
+消息是**服务端明文**（stu 的 WebSocket 直接写 `content`），所以中台发的消息 stu 能看到，
+stu 发的消息中台也能看到。
 
-## 1. 安全边界
+- 权限点：`chat:access`（`sys_menu` 里「群组聊天」）；`super_admin` 走 `*`。
+- 鉴权：请求头 `token`，由 `AuthInterceptor` 统一校验。
+- 统一响应：`{ code, msg, data }`，HTTP 恒为 200，业务码见文末。
 
-- 服务端**只保存密文**。消息正文在 `chat_envelope.body`，按目标设备逐条加密；
-  `chat_message` 只有元数据（发送者、`serverSeq`、时间、`clientMessageId`）。
-- 服务端只接收公钥：identity key、signed pre-key、one-time pre-key。
-  身份私钥、签名私钥、预共享密钥私钥永远留在客户端。
-- 登录 token 仍然是现有 `TokenStore` 的 32 位 UUID，聊天身份 = 登录 `username`。
-- 管理员接口通过 `ChatAccess.requireAdmin` 校验 role=admin。
-- 当前 token 无过期/刷新，生产化前需替换为 JWT/Redis；服务端也不做明文内容审核。
+## 1. 接口
 
-## 2. 持久化
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| GET | `/api/groups` | 群列表。普通用户只返回自己加入的群；`super_admin` 返回全站群组 |
+| GET | `/api/groups/candidates` | 建群可选用户（`id / name / account`），不要求 `user:read` |
+| GET | `/api/groups/{id}` | 群详情：`group` + `members` |
+| GET | `/api/groups/{id}/messages?beforeId=&limit=` | 历史消息，按 `id` 升序；`limit` 默认 50，上限 200 |
+| POST | `/api/groups/{id}/messages` | 发送消息，body `{content, clientMessageId}` |
+| POST | `/api/groups` | 建群，body `{name, memberIds[]}` |
+| POST | `/api/groups/{id}/join` | 加入群聊 |
 
-- 主库：远程 MySQL `118.25.25.164:3306/demo`（账号 `stu`），凭据在 `server/application-local.yml`（已 gitignore）。
-- 本项目所有表统一加 `wa_` 前缀（如 `wa_chat_message`、`wa_sys_account`），
-  与同库中 stu 项目的 `sys_role` / `chat_message` 等表完全隔离，互不影响。
-- 数据库驱动：`mysql-connector-j`；H2 只保留为集成测试用的内存库（`test` scope）。
-- `spring.jpa.hibernate.ddl-auto=update`，表由 JPA 自动创建。
-- 没有可视控制台；用任意 MySQL 客户端或 `information_schema` 查 `wa_*` 表。
+### 数据结构
 
-主要表（实际表名均带 `wa_` 前缀）：
+```json
+// 群
+{ "id": 1, "name": "测试", "ownerId": 50, "ownerName": "凌文杰",
+  "memberCount": 9, "lastMessage": "1", "lastSender": "李易",
+  "lastAt": "2026-10-21T13:55:51.401736", "joined": true }
 
-| 表 | 作用 |
+// 消息
+{ "id": 41, "groupId": 1, "senderId": 50, "senderName": "凌文杰",
+  "content": "hello", "mine": true, "sentAt": "2026-10-21T14:06:14.427213" }
+
+// 成员
+{ "id": 50, "name": "凌文杰", "account": "admin", "owner": true, "joinedAt": "2026-10-19T13:42:22.802615" }
+```
+
+时间统一为 `yyyy-MM-ddTHH:mm:ss[.SSSSSS]`（本地时间，前端 `new Date()` 直接解析）。
+
+## 2. 规则
+
+- **可见性**：读消息/发消息都要求是群成员；`super_admin` 可以旁路查看（列表里带 `joined=false`，页面显示「加入群聊」按钮）。
+- **幂等**：`clientMessageId` 相同视为同一条，重复提交返回已存在的那条，不产生重复行。
+- **内容**：去首尾空格后不能为空，长度 ≤ 2000 字；发送者 `sender_id / sender_name` 取自 token 对应的 `user`，不信请求体。
+- **建群**：建群时把群主和 `memberIds` 一起写入 `chat_member`；`joined_after_id` / `history_start_id` 写 0，新成员可见全部历史。
+- **排序**：群列表按「最后一条消息时间，没有则建群时间」倒序；消息按 `id` 升序。
+
+## 3. 错误码
+
+| code | 场景 |
 |---|---|
-| `wa_chat_device` | 设备身份/签名公钥/状态（PENDING/ACTIVE/REVOKED） |
-| `wa_chat_one_time_pre_key` | X3DH 一次性预共享公钥，分发一次即消费 |
-| `wa_chat_device_link` | 新设备授权申请 |
-| `wa_chat_device_grant` | 旧设备给新设备的加密历史授权（服务端仅存密文） |
-| `wa_chat_conversation` | 私聊/群聊、群版本号 `version`、`last_message_seq` |
-| `wa_chat_member` | 成员与账号级已读游标 |
-| `wa_chat_read_cursor` | 每设备已读游标 |
-| `wa_chat_message` | 消息元数据与 `serverSeq` |
-| `wa_chat_envelope` | 逐设备密文信封 |
-| `chat_group_policy` | 全局建群策略（单行） |
-| `chat_account_group_permission` | 账号级建群覆盖 |
+| 200 | 成功 |
+| 400 | 内容为空 / 超长 / 群名称不合法 / 成员不存在 |
+| 401 | 未登录或 token 失效 |
+| 403 | 不是群成员，或缺少 `chat:access` |
+| 404 | 群不存在 |
 
-## 3. 设备与密钥
+## 4. 运行与验证
 
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| POST | `/api/chat/devices/register` | 注册/更新设备；账号第一台自动 ACTIVE，之后为 PENDING |
-| GET | `/api/chat/devices` | 当前账号设备列表 |
-| GET | `/api/chat/devices/pending?deviceKey=` | 待授权设备（需 ACTIVE 设备） |
-| POST | `/api/chat/devices/approve` | 已有设备批准新设备，可附带历史授权密文 |
-| POST | `/api/chat/devices/reject` | 拒绝新设备 |
-| POST | `/api/chat/devices/revoke` | 撤销设备（不能撤销当前设备） |
-| GET | `/api/chat/devices/grants?deviceKey=` | 新设备拉取并消费历史授权密文 |
-| POST | `/api/chat/devices/heartbeat` | 更新 lastSeen |
-| GET | `/api/chat/users/{username}/device-bundles` | 获取目标账号所有 ACTIVE 设备的密钥包，消费 OTPK |
+```bash
+cd server
+mvn spring-boot:run          # 或 java -jar target/work-admin-server-1.0.0.jar --server.port=8081
 
-注册请求示例：
+# 登录拿 token
+TOKEN=$(curl -s --noproxy '*' -X POST http://127.0.0.1:8081/api/login \
+  -H 'Content-Type: application/json' -d '{"username":"admin","password":"123456"}' \
+  | sed -n 's/.*"token":"\([^"]*\)".*/\1/p')
 
-```json
-{
-  "clientDeviceKey": "uuid-...",
-  "deviceName": "Chrome / Windows",
-  "registrationId": 1234,
-  "identityKey": "base64(33B)",
-  "signedPreKeyId": 1,
-  "signedPreKeyPublic": "base64(33B)",
-  "signedPreKeySignature": "base64(64B)",
-  "oneTimePreKeys": [{"keyId": 1, "publicKey": "base64(33B)"}]
-}
+curl -s --noproxy '*' http://127.0.0.1:8081/api/groups -H "token: $TOKEN"
+curl -s --noproxy '*' "http://127.0.0.1:8081/api/groups/1/messages?limit=10" -H "token: $TOKEN"
+curl -s --noproxy '*' -X POST http://127.0.0.1:8081/api/groups/1/messages \
+  -H "token: $TOKEN" -H 'Content-Type: application/json' \
+  -d '{"content":"hello","clientMessageId":"manual-1"}'
 ```
 
-新设备处理流程：
+集成测试：`server/src/test/java/com/example/workadmin/GroupChatIntegrationTest.java`（8 项）。
+测试用 H2 内存库 + `src/test/resources/schema.sql` 造 stu 的表，不碰远程 MySQL：
 
-1. 注册返回 `pendingApproval=true` + `status=PENDING`。
-2. PENDING 设备调用同步/发送/已读均返回 `403`。
-3. 已有 ACTIVE 设备调用 `/approve`，可附带一个或多个
-   `{"cipherType":2,"body":"base64(只对新设备可解的密文)"}`。
-4. 新设备 ACTIVE 后拉取 `/grants`，解密后获得旧消息所需历史密钥。
-5. 旧消息本身没有发给新设备的信封，因此客户端需用授权材料重放/重加密历史；
-   服务端不会为了新设备重新明文分发历史消息。
-
-## 4. 会话与群聊
-
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| POST | `/api/chat/conversations/private` | body `{targetUsername}`，幂等获取私聊 |
-| POST | `/api/chat/conversations/group` | body `{name, memberUsernames[]}`，需建群权限 |
-| GET | `/api/chat/conversations?deviceKey=` | 会话列表，含未读数 |
-| GET | `/api/chat/conversations/{id}?deviceKey=` | 会话详情 |
-| POST | `/api/chat/conversations/{id}/members` | 群主加人，`version++` |
-| POST | `/api/chat/conversations/{id}/members/remove` | 群主移人，`version++` |
-| POST | `/api/chat/conversations/{id}/leave` | 成员退群，`version++` |
-| POST | `/api/chat/conversations/{id}/rename` | 群主改名，`version++` |
-| POST | `/api/chat/conversations/{id}/read` | body `{deviceKey,lastReadSeq}`，设备级已读游标 |
-
-私聊唯一键为排序后的 `usernameA|usernameB`，同一对账号只有一条会话。
-
-## 5. 消息与同步
-
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| POST | `/api/chat/messages` | 发送消息（逐设备密文） |
-| GET | `/api/chat/messages?conversationId=&deviceKey=&afterSeq=&limit=` | 增量拉取 |
-| GET | `/api/chat/messages/history?conversationId=&deviceKey=&limit=` | 向更早翻页 |
-| GET | `/api/chat/sync/state?deviceKey=` | 多端同步状态（版本号/最后序号/游标/未读） |
-
-发送请求：
-
-```json
-{
-  "conversationId": 1,
-  "clientMessageId": "client-uuid-1",
-  "senderDeviceKey": "uuid-sender-device",
-  "contentType": "TEXT",
-  "expectedVersion": 4,
-  "envelopes": [
-    {"targetDeviceKey": "uuid-device-a", "cipherType": 3, "body": "base64-ciphertext"},
-    {"targetDeviceKey": "uuid-device-b", "cipherType": 2, "body": "base64-ciphertext"}
-  ]
-}
+```bash
+cd server && mvn test
 ```
 
-规则：
+## 5. 前端实现
 
-- 幂等键：`(conversationId, senderUsername, senderClientDeviceKey, clientMessageId)`。
-  同一键重复提交返回首次结果，`duplicate=true`，不会重复分配 `serverSeq`。
-- `serverSeq` 在会话行锁内单调分配；客户端按 `afterSeq` 增量拉取。
-- `expectedVersion` 可选；与当前群版本不一致返回 `409`，用于成员已变化时强制刷新。
-- 目标设备必须是会话成员的 ACTIVE 设备；必须覆盖“所有成员 ACTIVE 设备 - 发送设备自己”。
-  缺设备副本或包含非成员设备都返回 `400`。
-- 同步时只返回当前设备自己的信封；其他设备的密文不会下发。
-- 已读游标按设备保存；`chat_member.last_read_seq` 保存账号级最大值用于通知聚合。
+`src/views/Chat.vue`：左侧群列表（名称、最后一条消息、成员数、时间），右侧消息流（自己的消息靠右、别人的靠左），
+底部输入框（Enter 发送 / Shift+Enter 换行），顶部成员抽屉与新建群弹窗。
+每 5 秒轮询一次当前群消息和群列表，不引入 WebSocket 也能做到近似实时。
 
-## 6. 建群权限
+## 6. 已废弃
 
-| 方法 | 路径 | 说明 |
-|---|---|---|
-| GET | `/api/chat/group-permission` | 当前账号是否可建群 |
-| GET/POST | `/api/chat/admin/group-policy` | 全局 `AUTO_ALLOW/AUTO_DENY/MANUAL` |
-| GET/POST | `/api/chat/admin/account-permissions` | 账号级 `INHERIT/ALLOW/DENY` |
-| GET | `/api/chat/admin/devices?username=` | 管理员查看设备 |
-| POST | `/api/chat/admin/devices/reset` | 管理员重置账号设备（应急恢复） |
-
-解析顺序：账号 `ALLOW` → 允许；账号 `DENY` → 拒绝；`INHERIT` 时跟随全局。
-`MANUAL` 下默认拒绝，管理员把账号覆盖设为 `ALLOW` 才可建群。
-
-## 7. 错误码
-
-沿用统一响应 `{code,msg,data}`，HTTP 始终 200：
-
-- `400` 参数/密文/设备副本不完整
-- `401` 未登录（拦截器）
-- `403` 非成员、设备未激活、无建群权限、非管理员
-- `404` 账号/会话/设备不存在
-- `409` 群版本冲突、设备已撤销等
-- `500` 服务器错误
-
-## 8. 运行与测试
-
-```powershell
-cd E:\my-project\work-admin\server
-mvn test
-mvn -DskipTests package
-java -jar target\work-admin-server-1.0.0.jar
-```
-
-集成测试覆盖：登录、首台设备自动激活、密钥包消费 OTPK、私聊创建、
-`clientMessageId` 幂等、逐设备密文分发、新设备 PENDING/授权/历史 grant、
-设备级已读游标、建群全局/账号权限、群成员版本号、群消息 fanout、管理员重置设备。
-
-## 9. 浏览器端 E2EE 实现
-
-前端页面：`/chat`（[`Chat.vue`](../src/views/Chat.vue)）
-
-- 设备初始化：`src/utils/chatCrypto.js` 用 `KeyHelper` 生成 identity key、signed pre-key、
-  10 个 one-time pre-key；只有公钥通过 `/api/chat/devices/register` 上传。
-- 私钥存储：`src/utils/signalStore.js` 实现 libsignal `StorageType`，按 `clientDeviceKey`
-  存在浏览器 `localStorage`，不同账号/设备互不覆盖。
-- 发送：对会话所有成员调用 `/api/chat/users/{username}/device-bundles`，
-  排除当前设备后，对每台设备用 `SessionBuilder.processPreKey` + `SessionCipher.encrypt`
-  生成一个信封；服务端要求覆盖所有 ACTIVE 目标设备。
-- 接收：按 `serverSeq` 顺序调用 `decryptPreKeyWhisperMessage` /
-  `decryptWhisperMessage`；解密后的明文按 message id / clientMessageId 缓存到本地。
-- 多设备：第二台设备注册后 PENDING，现有设备在「设备」对话框批准；
-  新设备只能解密批准后发给它的消息。
-- 构建注意：`vue.config.js` 对 libsignal 的 curve25519 wasm 包设置 `resolve.fallback.fs=false`。
-- 消息全部落在 MySQL，服务端只存逐设备密文。
-
-已实测：Node 端两个真实 libsignal 设备通过该后端完成
-`PreKeyWhisperMessage` 发送 → 对方解密 → `WhisperMessage` 回复 → 原设备解密。
-
-## 10. 当前未实现 / 下一步
-
-- WebSocket 实时推送（当前是 HTTP 增量同步）。
-- 客户端 libsignal 加密/解密、设备本地密钥存储、历史重加密。
-- 群主转让/解散群、消息撤回、附件对象存储。
-- token 过期/刷新、接口级 RBAC、限流与审计。
+`/api/chat/**`（设备注册、密钥分发、逐设备密文信封）整套已移除，
+对应的 `wa_chat_*` 表不再使用。原因见 [`../ARCHITECTURE.md`](../ARCHITECTURE.md) 第 4 节：
+端到端加密和中台/stu 共用的明文消息表无法共存，且多设备授权会让浏览器首登卡在 PENDING。

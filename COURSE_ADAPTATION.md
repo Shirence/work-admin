@@ -47,12 +47,13 @@
 - `WS /ws/chat`
 - 明文 `chat_message`
 
-当前项目已有一套更强的聊天实现：
-- 本地 `/chat`：libsignal E2EE，逐设备密文、会话版本、已读游标。
+现在项目的群聊已经和课件对齐：
+- `GET/POST /api/groups`、`GET/POST /api/groups/{id}/messages`，读写 stu 的 `chat_group` / `chat_member` / `chat_message`；
+- 页面 `/chat` 左侧群列表 + 右侧消息流，5 秒轮询。
 
-直接加课件式明文群聊会破坏 E2EE 边界并产生第二套聊天模型。
-如果要做实时能力，建议给现有 E2EE 聊天加 WebSocket 只做「有新消息」通知，
-消息体仍走现有加密接口，而不是照搬 `/ws/chat` 明文协议。
+**仍未做**的是 WebSocket 推送：现在的近似实时靠轮询。要做实时，
+建议直接复用 stu 的 `WS /ws/chat` 协议（同一个消息表、同一套 JSON），
+而不是在服务端再引一套推送格式。
 
 ### AI SSE
 

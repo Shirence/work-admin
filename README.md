@@ -2,7 +2,7 @@
 
 Vue 3（选项式 API，纯 JavaScript）+ Element Plus + Vuex + Vue Router + Axios。
 
-配套后端：[`server`](./server)（Spring Boot 3.5 + Spring Data JPA + 远程 MySQL）。
+配套后端：[`server`](./server)（Spring Boot 3.5 + JdbcTemplate + 远程 MySQL，直接复用 stu 的表）。
 
 > 前端按《Vue 3 + Element Plus 工作管理中台：项目实战课》第 0 ~ 10 课完成，
 > 之后扩展了「第 11 课」：接入 Spring Boot 真实后端；MockJS 保留为可切换的离线模式。
