@@ -12,4 +12,8 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
     boolean existsByUsername(String username);
 
     boolean existsByEmail(String email);
+
+    long countByRoleId(Long roleId);
+
+    java.util.List<Account> findAllByOrderByIdAsc();
 }

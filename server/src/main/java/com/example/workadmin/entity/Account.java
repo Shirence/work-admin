@@ -34,6 +34,10 @@ public class Account {
     @Column(nullable = false, length = 20)
     private String role;
 
+    /** sys_role.id；旧数据为 null 时按 role 编码回填。 */
+    @Column(name = "role_id")
+    private Long roleId;
+
     @Column(nullable = false)
     private Boolean enabled = true;
 
@@ -78,6 +82,14 @@ public class Account {
 
     public void setRole(String role) {
         this.role = role;
+    }
+
+    public Long getRoleId() {
+        return roleId;
+    }
+
+    public void setRoleId(Long roleId) {
+        this.roleId = roleId;
     }
 
     public Boolean getEnabled() {

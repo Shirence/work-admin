@@ -7,6 +7,7 @@ import com.example.workadmin.dto.LoginResponse;
 import com.example.workadmin.dto.RegisterRequest;
 import com.example.workadmin.dto.UserInfo;
 import com.example.workadmin.entity.Account;
+import com.example.workadmin.entity.Role;
 import com.example.workadmin.repository.AccountRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -24,13 +25,16 @@ public class AuthService {
     private final AccountRepository accountRepository;
     private final TokenStore tokenStore;
     private final PasswordEncoder passwordEncoder;
+    private final AccessService accessService;
 
     public AuthService(AccountRepository accountRepository,
                        TokenStore tokenStore,
-                       PasswordEncoder passwordEncoder) {
+                       PasswordEncoder passwordEncoder,
+                       AccessService accessService) {
         this.accountRepository = accountRepository;
         this.tokenStore = tokenStore;
         this.passwordEncoder = passwordEncoder;
+        this.accessService = accessService;
     }
 
     public LoginResponse login(LoginRequest request) {
@@ -44,11 +48,7 @@ public class AuthService {
         if (Boolean.FALSE.equals(account.getEnabled())) {
             throw new BizException(403, "账号已被禁用，请联系管理员");
         }
-        UserInfo userInfo = new UserInfo(
-                account.getUsername(),
-                account.getRole(),
-                RolePermissions.of(account.getRole())
-        );
+        UserInfo userInfo = userInfo(account);
         String token = tokenStore.create(userInfo);
         return new LoginResponse(token, userInfo);
     }
@@ -76,11 +76,30 @@ public class AuthService {
         account.setEnabled(true);
         account.setCreatedAt(LocalDateTime.now());
         accountRepository.save(account);
+        Role role = accessService.roleFor(account);
+        if (role != null) {
+            account.setRoleId(role.getId());
+            accountRepository.save(account);
+        }
 
-        return new UserInfo(account.getUsername(), account.getRole(), RolePermissions.of(account.getRole()));
+        return userInfo(account);
+    }
+
+    private UserInfo userInfo(Account account) {
+        Role role = accessService.roleFor(account);
+        String roleCode = role == null ? account.getRole() : role.getCode();
+        String roleName = role == null ? account.getRole() : role.getName();
+        return new UserInfo(account.getUsername(), roleCode,
+                accessService.permissionsFor(account.getUsername()),
+                role == null ? null : role.getId(), roleName,
+                null, account.getUsername(), "LOCAL");
     }
 
     public void logout(String token) {
         tokenStore.remove(token);
+    }
+
+    public UserInfo me(String username) {
+        return userInfo(accessService.requireAccount(username));
     }
 }

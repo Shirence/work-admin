@@ -1,6 +1,7 @@
 package com.example.workadmin.controller;
 
 import com.example.workadmin.common.BizException;
+import com.example.workadmin.common.RequirePermission;
 import com.example.workadmin.common.Result;
 import com.example.workadmin.dto.UserRequest;
 import com.example.workadmin.entity.User;
@@ -28,24 +29,28 @@ public class UserController {
 
     /** GET /api/user/list?keyword=张 */
     @GetMapping("/list")
+    @RequirePermission("user:read")
     public Result<List<User>> list(@RequestParam(value = "keyword", required = false) String keyword) {
         return Result.ok(userService.list(keyword));
     }
 
     /** POST /api/user/add  body: { username, phone, role } */
     @PostMapping("/add")
+    @RequirePermission("user:create")
     public Result<User> add(@Valid @RequestBody UserRequest request) {
         return Result.ok("新增成功", userService.add(request));
     }
 
     /** POST /api/user/edit  body: { id, username, phone, role } */
     @PostMapping("/edit")
+    @RequirePermission("user:update")
     public Result<User> edit(@Valid @RequestBody UserRequest request) {
         return Result.ok("编辑成功", userService.edit(request));
     }
 
     /** POST /api/user/delete  body: { id } */
     @PostMapping("/delete")
+    @RequirePermission("user:delete")
     public Result<Void> delete(@RequestBody Map<String, Object> body) {
         Object raw = body.get("id");
         if (raw == null) {

@@ -14,6 +14,12 @@ public class UserInfo {
     private String role;
     private List<String> permissions;
 
+    /** sys_role.id；远程账号为 null。 */
+    private Long roleId;
+
+    /** 角色显示名。 */
+    private String roleName;
+
     /** 远程 MySQL user.id；本地账号为 null。 */
     private Long remoteUserId;
 
@@ -44,6 +50,24 @@ public class UserInfo {
         this.authSource = authSource;
     }
 
+    public UserInfo(String username,
+                    String role,
+                    List<String> permissions,
+                    Long roleId,
+                    String roleName,
+                    Long remoteUserId,
+                    String displayName,
+                    String authSource) {
+        this.username = username;
+        this.role = role;
+        this.permissions = permissions;
+        this.roleId = roleId;
+        this.roleName = roleName;
+        this.remoteUserId = remoteUserId;
+        this.displayName = displayName;
+        this.authSource = authSource;
+    }
+
     public String getUsername() {
         return username;
     }
@@ -66,6 +90,22 @@ public class UserInfo {
 
     public void setPermissions(List<String> permissions) {
         this.permissions = permissions;
+    }
+
+    public Long getRoleId() {
+        return roleId;
+    }
+
+    public void setRoleId(Long roleId) {
+        this.roleId = roleId;
+    }
+
+    public String getRoleName() {
+        return roleName;
+    }
+
+    public void setRoleName(String roleName) {
+        this.roleName = roleName;
     }
 
     public Long getRemoteUserId() {

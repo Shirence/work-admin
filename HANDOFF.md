@@ -282,6 +282,21 @@ com.example.workadmin
   远程聊天不在本地侧栏出现，只从 `/remote-login` / `/remote-register` 成功后进入。
   远程聊天需要独立远程账号登录，本地 token 与 remoteToken 互不覆盖。
 
+### 5.9 RBAC：角色、菜单、按钮权限
+
+- 表：`sys_role`、`sys_menu`、`sys_role_menu`；`sys_account.role_id` 指向 `sys_role`。
+- 权限点来自 `sys_menu.permission`，不写死在代码里；`admin` 额外拥有 `*`。
+- 接口：
+  - `GET /api/auth/access` → `{role, permissions, menus}`
+  - `GET /api/users` + `PUT /api/users/{id}/role`（登录账号列表/绑定角色）
+  - `/api/roles` CRUD、`/api/roles/options`、`/api/roles/{id}/permissions`
+  - `/api/menus` CRUD、`/api/menus/permission-tree`
+- `@RequirePermission("user:read")` 由 `AuthInterceptor` 统一校验；无权限返回 HTTP 200 + `code=403`。
+- 内置角色/菜单：`admin` / `manager` / `viewer`，种子菜单包含仪表盘、消息、用户管理、角色管理、菜单管理及按钮权限。
+- 前端 `store.state.access` + `getters.can` + `refreshAccess`；路由 `meta.permission` 控制页面，
+  `Layout` 按权限过滤导航；`Roles.vue` / `Menus.vue` 管理角色与权限树。
+- 业务用户 CRUD 仍是 `sys_user`（`/api/user/*`）；登录账号与角色绑定在用户页下方「登录账号与角色」。
+
 ---
 
 ## 6. 前端设计
@@ -316,9 +331,12 @@ Spring Boot
 /login      → Login.vue            （白名单）
 /register   → Register.vue         （白名单）
 /           → Layout.vue  redirect /dashboard
-   ├─ dashboard → Dashboard.vue  meta:{title:'仪表盘', icon:'House', menu:true, roles:[admin,manager,viewer]}
-   ├─ chat      → Chat.vue       meta:{title:'消息', icon:'ChatDotRound', menu:true, roles:[admin,manager,viewer]}
-   ├─ user      → User.vue       meta:{title:'用户管理', icon:'User', menu:true, roles:[admin,manager]}
+   ├─ dashboard → Dashboard.vue  meta:{title:'仪表盘', icon:'House', menu:true, permission:'dashboard:view'}
+   ├─ chat      → Chat.vue       meta:{title:'消息', icon:'ChatDotRound', menu:true, permission:'chat:access'}
+   ├─ user      → User.vue       meta:{title:'用户管理', icon:'User', menu:true, permission:'user:read'}
+   ├─ roles     → Roles.vue      meta:{title:'角色管理', icon:'Avatar', menu:true, permission:'role:read'}
+   ├─ menus     → Menus.vue      meta:{title:'菜单管理', icon:'Menu', menu:true, permission:'menu:read'}
+   └─ forbidden → Forbidden.vue
 
 /remote-login → RemoteLogin.vue    （公开；远程 stu 账号登录）
 /remote-register → RemoteRegister.vue（公开；远程 stu 账号注册）
@@ -326,11 +344,16 @@ Spring Boot
 ```
 
 - **history 模式**（`createWebHistory(process.env.BASE_URL)`），生产必须配 SPA 回退
-- 守卫：白名单直接放行；无 token → `/login`；角色不在 `meta.roles` → 提示并回 `/dashboard`
+- 守卫：白名单直接放行；无 token → `/login`；`refreshAccess` 后按 `meta.permission` 判断，
+  无权限 → `/forbidden`；权限接口失败也回 `/forbidden`，不误清 token
+- `Layout` 导航按 `$store.getters.can` 过滤
 - `router.onError` 捕获 ChunkLoadError 自动刷新一次（防旧 chunk）
 - 页面组件全部 `() => import(...)` 懒加载
 
 ### 6.3 状态管理
+
+`store.state.access = { role, permissions, menus }`；`getters.can` 支持 `*`；
+`refreshAccess` 同时请求 `/api/auth/access` 和 `/api/me`，切换账号或角色后刷新。
 
 `src/store/index.js`：`token` / `userInfo`，初始值从 localStorage 读；mutation 内双写。
 
@@ -443,7 +466,10 @@ html {
 | `Login.vue` / `Register.vue` | 全屏 `.mesh.noise` + `<ParticleField>` + 玻璃卡（渐变描边）+ 薄荷渐变主按钮 + 右上角主题切换 |
 | `RemoteLogin.vue` / `RemoteRegister.vue` | 同上，但使用品红/冰蓝远程色系；注册独立为 `/remote-register` |
 | `Dashboard.vue` | Bento 栅格 + 主题感知的 ECharts（柱状/环形） |
-| `User.vue` | 页头 + 面板 + 表格；表头由全局深/浅色样式接管 |
+| `User.vue` | 页头 + 面板 + 表格；表头由全局深/浅色样式接管；下方「登录账号与角色」 |
+| `Roles.vue` | 角色 CRUD + 权限树（独立勾选，保存自动补祖先） |
+| `Menus.vue` | 目录/页面/按钮 CRUD，树形表格 |
+| `Forbidden.vue` | 无权限页，可刷新权限 |
 | `Chat.vue` | 本地 E2EE 消息页；只显示本地 H2 消息 |
 | `RemoteChatRoom.vue` | 远程群聊；独立登录态 + 248px 远程侧栏 + 72px 顶栏 + ThemeToggle，和主 Layout 结构对齐；只显示远程消息 |
 

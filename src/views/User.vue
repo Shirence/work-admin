@@ -29,7 +29,7 @@
         </div>
 
         <div class="toolbar-right">
-          <el-button v-if="can('user:add')" type="primary" plain @click="openAddDialog">
+          <el-button v-if="can('user:create')" type="primary" plain @click="openAddDialog">
             <el-icon class="btn-icon"><Plus /></el-icon>新增用户
           </el-button>
           <el-button
@@ -80,7 +80,7 @@
         </el-table-column>
         <el-table-column label="操作" width="140" align="right">
           <template #default="{ row }">
-            <el-button v-if="can('user:edit')" link type="primary" @click="openEditDialog(row)">编辑</el-button>
+            <el-button v-if="can('user:update')" link type="primary" @click="openEditDialog(row)">编辑</el-button>
             <el-button v-if="can('user:delete')" link type="danger" @click="handleDelete(row)">删除</el-button>
           </template>
         </el-table-column>
@@ -89,6 +89,50 @@
         </template>
       </el-table>
     </section>
+
+    <section v-if="can('user:assign-role')" v-reveal="80" class="panel accounts-panel">
+      <div class="toolbar">
+        <div>
+          <h3>登录账号与角色</h3>
+          <p class="u-hint">角色来自 sys_role；保存后该账号刷新页面或点击「刷新权限」生效</p>
+        </div>
+        <el-button :loading="accountsLoading" @click="loadAccounts">刷新</el-button>
+        <el-button :loading="refreshing" @click="refreshAccess">刷新权限</el-button>
+      </div>
+      <el-table v-loading="accountsLoading" :data="accounts" class="table">
+        <el-table-column prop="id" label="ID" width="70">
+          <template #default="{ row }"><span class="mono dim">{{ row.id }}</span></template>
+        </el-table-column>
+        <el-table-column prop="username" label="账号" min-width="120" />
+        <el-table-column prop="email" label="邮箱" min-width="180" />
+        <el-table-column label="角色" width="150">
+          <template #default="{ row }">
+            <span class="chip chip-admin">{{ row.roleName || row.roleCode || '未分配' }}</span>
+          </template>
+        </el-table-column>
+        <el-table-column label="状态" width="90">
+          <template #default="{ row }">{{ row.enabled ? '启用' : '停用' }}</template>
+        </el-table-column>
+        <el-table-column label="操作" width="120" align="right">
+          <template #default="{ row }">
+            <el-button link type="primary" :disabled="roleSaving" @click="openRole(row)">绑定角色</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </section>
+
+    <el-dialog v-model="roleVisible" title="替换账号角色" width="400px" :close-on-click-modal="!roleSaving">
+      <div class="role-form">
+        <p class="u-hint">账号：{{ roleAccount?.username }} · {{ roleAccount?.email }}</p>
+        <el-select v-model="roleId" :disabled="roleSaving" placeholder="选择角色" style="width: 100%">
+          <el-option v-for="role in roleOptions" :key="role.id" :label="role.name" :value="role.id" />
+        </el-select>
+      </div>
+      <template #footer>
+        <el-button :disabled="roleSaving" @click="roleVisible = false">取消</el-button>
+        <el-button type="primary" :loading="roleSaving" :disabled="!roleId" @click="saveRole">保存</el-button>
+      </template>
+    </el-dialog>
 
     <UserFormDialog
       v-model="dialogVisible"
@@ -102,6 +146,7 @@
 
 <script>
 import { getUserList, addUser, editUser, delUser } from '../api/user'
+import { getAccounts, getRoleOptions, bindUserRole } from '../api/access'
 import UserFormDialog from '../components/UserFormDialog.vue'
 
 export default {
@@ -117,15 +162,80 @@ export default {
       selectedRows: [],
       dialogVisible: false,
       dialogTitle: "新增用户",
-      currentRow: {}
+      currentRow: {},
+      accounts: [],
+      accountsLoading: false,
+      roleVisible: false,
+      roleAccount: null,
+      roleId: null,
+      roleOptions: [],
+      roleSaving: false,
+      refreshing: false
     }
   },
   created() {
     this.fetchList()
+    if (this.can('user:assign-role')) this.loadAccounts()
   },
   methods: {
     can(permission) {
-      return this.$store.state.userInfo?.permissions?.includes(permission) || false
+      return this.$store.getters.can(permission)
+    },
+
+    async loadAccounts() {
+      this.accountsLoading = true
+      try {
+        const res = await getAccounts()
+        this.accounts = res.data || []
+      } catch (e) {
+        this.$message.error(e.message || '获取登录账号失败')
+      } finally {
+        this.accountsLoading = false
+      }
+    },
+
+    async refreshAccess() {
+      this.refreshing = true
+      try {
+        await this.$store.dispatch('refreshAccess')
+        this.$message.success('权限已刷新')
+      } catch (e) {
+        this.$message.error(e.message || '刷新权限失败')
+      } finally {
+        this.refreshing = false
+      }
+    },
+
+    async openRole(row) {
+      if (this.roleSaving) return
+      try {
+        const res = await getRoleOptions()
+        this.roleOptions = res.data || []
+      } catch (e) {
+        this.$message.error(e.message || '获取角色失败')
+        return
+      }
+      this.roleAccount = row
+      this.roleId = this.roleOptions.some(r => r.id === row.roleId) ? row.roleId : null
+      this.roleVisible = true
+    },
+
+    async saveRole() {
+      if (this.roleSaving || !this.roleId) return
+      this.roleSaving = true
+      try {
+        await bindUserRole(this.roleAccount.id, this.roleId)
+        this.roleVisible = false
+        this.$message.success('角色已更新')
+        if (this.roleAccount.username === this.$store.state.userInfo?.username) {
+          await this.$store.dispatch('refreshAccess')
+        }
+        await this.loadAccounts()
+      } catch (e) {
+        this.$message.error(e.message || '角色更新失败')
+      } finally {
+        this.roleSaving = false
+      }
     },
 
     async fetchList() {
@@ -241,6 +351,9 @@ export default {
   box-shadow: var(--shadow-xs);
   padding: 18px;
 }
+.accounts-panel { margin-top: 16px; }
+.accounts-panel h3 { font-size: 14px; margin-bottom: 3px; }
+.role-form { display: flex; flex-direction: column; gap: 12px; }
 
 .toolbar {
   display: flex;

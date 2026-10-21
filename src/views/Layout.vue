@@ -85,6 +85,8 @@ export default {
       return this.$store.state.userInfo?.role
     },
     roleLabel() {
+      const roleName = this.$store.state.access.role?.name || this.$store.state.userInfo?.roleName
+      if (roleName) return roleName
       const map = { admin: 'ADMIN', manager: 'MANAGER', viewer: 'VIEWER' }
       return map[this.userRole] || 'USER'
     },
@@ -98,7 +100,7 @@ export default {
       return this.$router
         .getRoutes()
         .filter(route => route.meta.menu)
-        .filter(route => !route.meta.roles || route.meta.roles.includes(this.userRole))
+        .filter(route => !route.meta.permission || this.$store.getters.can(route.meta.permission))
         .map(route => ({ path: route.path, title: route.meta.title, icon: route.meta.icon }))
     }
   },

@@ -1,10 +1,14 @@
 package com.example.workadmin.config;
 
+import com.example.workadmin.common.BizException;
+import com.example.workadmin.common.RequirePermission;
 import com.example.workadmin.dto.UserInfo;
+import com.example.workadmin.service.AccessService;
 import com.example.workadmin.service.TokenStore;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.stereotype.Component;
+import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
 
 import java.io.IOException;
@@ -19,9 +23,11 @@ public class AuthInterceptor implements HandlerInterceptor {
     public static final String CURRENT_USER = "CURRENT_USER";
 
     private final TokenStore tokenStore;
+    private final AccessService accessService;
 
-    public AuthInterceptor(TokenStore tokenStore) {
+    public AuthInterceptor(TokenStore tokenStore, AccessService accessService) {
         this.tokenStore = tokenStore;
+        this.accessService = accessService;
     }
 
     @Override
@@ -44,6 +50,20 @@ public class AuthInterceptor implements HandlerInterceptor {
             }
         }
         request.setAttribute(CURRENT_USER, userInfo);
+        if (handler instanceof HandlerMethod method) {
+            RequirePermission permission = method.getMethodAnnotation(RequirePermission.class);
+            if (permission == null) {
+                permission = method.getBeanType().getAnnotation(RequirePermission.class);
+            }
+            if (permission != null) {
+                try {
+                    accessService.require(userInfo.getUsername(), permission.value());
+                } catch (BizException e) {
+                    writeJson(response, e.getCode(), e.getMessage());
+                    return false;
+                }
+            }
+        }
         return true;
     }
 

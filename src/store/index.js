@@ -1,13 +1,19 @@
 import { createStore } from 'vuex'
 
+const emptyAccess = () => ({ role: null, permissions: [], menus: [] })
+let refreshing = null
+
 export default createStore({
-  // 第 1 课：初始值从 localStorage 读取，实现刷新不丢登录状态
   state: {
     token: localStorage.getItem('token') || '',
-    userInfo: JSON.parse(localStorage.getItem('userInfo')) || null
+    userInfo: JSON.parse(localStorage.getItem('userInfo')) || null,
+    access: emptyAccess()
+  },
+  getters: {
+    can: state => permission =>
+      state.access.permissions.includes('*') || state.access.permissions.includes(permission)
   },
   mutations: {
-    // 唯一能修改 state 的地方，必须同步
     setToken(state, val) {
       state.token = val
       localStorage.setItem('token', val)
@@ -16,13 +22,34 @@ export default createStore({
       state.userInfo = val
       localStorage.setItem('userInfo', JSON.stringify(val))
     },
+    setAccess(state, access) {
+      state.access = access || emptyAccess()
+    },
     clearUserInfo(state) {
       state.token = ''
       state.userInfo = null
+      state.access = emptyAccess()
       localStorage.removeItem('token')
       localStorage.removeItem('userInfo')
     }
   },
-  actions: {},
-  getters: {}
+  actions: {
+    async refreshAccess({ state, commit }) {
+      if (!state.token) throw new Error('未登录')
+      if (refreshing) return refreshing
+      const token = state.token
+      refreshing = (async () => {
+        const [{ getAccess }, { getMe }] = await Promise.all([
+          import('../api/access'),
+          import('../api/auth')
+        ])
+        const [accessRes, meRes] = await Promise.all([getAccess(), getMe()])
+        if (token !== state.token) throw new Error('登录账号已变更')
+        commit('setAccess', accessRes.data || emptyAccess())
+        if (meRes.data) commit('setUserInfo', meRes.data)
+        return accessRes.data
+      })().finally(() => { refreshing = null })
+      return refreshing
+    }
+  }
 })

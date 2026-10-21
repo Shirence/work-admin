@@ -48,7 +48,7 @@ public class AuthController {
     /** GET /api/me */
     @GetMapping("/me")
     public Result<UserInfo> me(@RequestAttribute(AuthInterceptor.CURRENT_USER) UserInfo userInfo) {
-        return Result.ok(userInfo);
+        return Result.ok(authService.me(userInfo.getUsername()));
     }
 
     /** GET /api/health  不需要 token */

@@ -40,19 +40,37 @@ const routes = [
         path: 'dashboard',
         name: 'Dashboard',
         component: () => import('../views/Dashboard.vue'),
-        meta: { title: '仪表盘', icon: 'House', menu: true, roles: ['admin', 'manager', 'viewer'] }
+        meta: { title: '仪表盘', icon: 'House', menu: true, permission: 'dashboard:view' }
       },
       {
         path: 'chat',
         name: 'Chat',
         component: () => import('../views/Chat.vue'),
-        meta: { title: '消息', icon: 'ChatDotRound', menu: true, roles: ['admin', 'manager', 'viewer'] }
+        meta: { title: '消息', icon: 'ChatDotRound', menu: true, permission: 'chat:access' }
       },
       {
         path: 'user',
         name: 'User',
         component: () => import('../views/User.vue'),
-        meta: { title: '用户管理', icon: 'User', menu: true, roles: ['admin', 'manager'] }
+        meta: { title: '用户管理', icon: 'User', menu: true, permission: 'user:read' }
+      },
+      {
+        path: 'roles',
+        name: 'Roles',
+        component: () => import('../views/Roles.vue'),
+        meta: { title: '角色管理', icon: 'Avatar', menu: true, permission: 'role:read' }
+      },
+      {
+        path: 'menus',
+        name: 'Menus',
+        component: () => import('../views/Menus.vue'),
+        meta: { title: '菜单管理', icon: 'Menu', menu: true, permission: 'menu:read' }
+      },
+      {
+        path: 'forbidden',
+        name: 'Forbidden',
+        component: () => import('../views/Forbidden.vue'),
+        meta: { title: '无权访问' }
       }
     ]
   }
@@ -64,8 +82,8 @@ const router = createRouter({
   routes
 })
 
-// 第 9 课：全局路由守卫 —— 登录校验 + 角色权限控制
-router.beforeEach(to => {
+// 第 9 课：全局路由守卫 —— 登录校验 + 后端权限点控制
+router.beforeEach(async to => {
   const token = store.state.token
 
   // 白名单：登录、注册、远程账号登录/注册页无需本地 token
@@ -80,15 +98,20 @@ router.beforeEach(to => {
     return localStorage.getItem('remoteToken') ? true : '/remote-login'
   }
 
-  // 未登录：一律去登录页
   if (!token) return '/login'
 
-  // 角色不在允许列表内：提示并回到仪表盘
-  const role = store.state.userInfo?.role
-  const allowed = to.meta.roles
-  if (Array.isArray(allowed) && !allowed.includes(role)) {
-    ElMessage.warning('您没有权限访问该页面')
-    return '/dashboard'
+  try {
+    // 首次进入或权限点不明确时，从后端刷新 access。
+    if (!store.state.access.role || to.meta.permission) {
+      await store.dispatch('refreshAccess')
+    }
+    if (to.meta.permission && !store.getters.can(to.meta.permission)) {
+      ElMessage.warning('您没有权限访问该页面')
+      return to.path === '/forbidden' ? true : '/forbidden'
+    }
+  } catch (error) {
+    if (!store.state.token) return '/login'
+    if (to.path !== '/forbidden') return '/forbidden'
   }
 
   return true
