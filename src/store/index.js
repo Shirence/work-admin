@@ -3,10 +3,21 @@ import { createStore } from 'vuex'
 const emptyAccess = () => ({ role: null, permissions: [], menus: [] })
 let refreshing = null
 
+// localStorage 里的 userInfo 可能是上一个版本留下的旧结构，也可能被人手改坏；
+// 直接 JSON.parse 会在模块加载阶段抛异常，整个应用白屏。
+function readUserInfo() {
+  try {
+    return JSON.parse(localStorage.getItem('userInfo')) || null
+  } catch (e) {
+    localStorage.removeItem('userInfo')
+    return null
+  }
+}
+
 export default createStore({
   state: {
     token: localStorage.getItem('token') || '',
-    userInfo: JSON.parse(localStorage.getItem('userInfo')) || null,
+    userInfo: readUserInfo(),
     access: emptyAccess()
   },
   getters: {

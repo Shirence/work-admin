@@ -30,7 +30,7 @@
         <el-table-column label="操作" width="260" align="right">
           <template #default="{ row }">
             <el-button v-if="can('role:update')" link type="primary" :disabled="busy" @click="open(row)">编辑</el-button>
-            <el-button v-if="can('role:grant')" link type="primary" :disabled="busy || row.code === 'admin'" @click="openGrant(row)">分配权限</el-button>
+            <el-button v-if="can('role:grant')" link type="primary" :disabled="busy || row.code === 'super_admin'" @click="openGrant(row)">分配权限</el-button>
             <el-button v-if="can('role:delete')" link type="danger" :disabled="busy || row.builtin || row.userCount > 0" @click="remove(row)">删除</el-button>
           </template>
         </el-table-column>
