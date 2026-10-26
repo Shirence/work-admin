@@ -32,7 +32,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
         "spring.datasource.username=sa",
         "spring.datasource.password=",
         "spring.datasource.driver-class-name=org.h2.Driver",
-        "spring.sql.init.mode=always"
+        "spring.sql.init.mode=always",
+        // 集成测试不依赖外部 Redis：token 改用内存实现
+        "work-admin.auth.token-store=memory"
 })
 @AutoConfigureMockMvc
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)

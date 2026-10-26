@@ -15,7 +15,7 @@
   <artifactId>work-admin-server</artifactId>
   <version>1.0.0</version>
   <name>work-admin-server</name>
-  <description>work-admin 工作管理中台后端 API（Spring Boot + MySQL + JPA）</description>
+  <description>work-admin 工作管理中台后端 API（Spring Boot + JdbcTemplate + MySQL + Redis）</description>
 
   <properties>
     <java.version>17</java.version>
@@ -43,6 +43,15 @@
       <groupId>com.mysql</groupId>
       <artifactId>mysql-connector-j</artifactId>
       <scope>runtime</scope>
+    </dependency>
+
+    <!-- 登录 token 存 Redis：进程重启后 token 依然可用。
+         只引 redisson 核心包（不用 starter），客户端由 RedissonConfig 显式创建，
+         这样不会被 starter 的自动配置绑死在某个 Spring Boot 版本上。 -->
+    <dependency>
+      <groupId>org.redisson</groupId>
+      <artifactId>redisson</artifactId>
+      <version>3.52.0</version>
     </dependency>
 
     <!-- 仅集成测试使用内存库，运行期不再依赖 H2 -->

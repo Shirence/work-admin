@@ -1,36 +1,22 @@
 package com.example.workadmin.service;
 
 import com.example.workadmin.dto.UserInfo;
-import org.springframework.stereotype.Component;
-
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * 极简 token 存储（内存版）：进程重启即失效。
+ * 登录 token 的存放位置。
+ * <p>
+ * 两种实现由 {@code work-admin.auth.token-store} 决定：
+ * {@link RedisTokenStore}（默认，重启服务后 token 依然有效）、
+ * {@link MemoryTokenStore}（进程内存，仅供离线开发 / 测试）。
  */
-@Component
-public class TokenStore {
+public interface TokenStore {
 
-    private final Map<String, UserInfo> store = new ConcurrentHashMap<>();
+    /** 为登录成功的用户签发 token，并保存对应的身份信息。 */
+    String create(UserInfo userInfo);
 
-    public String create(UserInfo userInfo) {
-        String token = UUID.randomUUID().toString().replace("-", "");
-        store.put(token, userInfo);
-        return token;
-    }
+    /** 用 token 换回身份信息；token 不存在或已过期返回 {@code null}。 */
+    UserInfo get(String token);
 
-    public UserInfo get(String token) {
-        if (token == null || token.isBlank()) {
-            return null;
-        }
-        return store.get(token);
-    }
-
-    public void remove(String token) {
-        if (token != null) {
-            store.remove(token);
-        }
-    }
+    /** 退出登录：让 token 立即失效。 */
+    void remove(String token);
 }

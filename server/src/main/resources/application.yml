@@ -26,6 +26,19 @@ spring:
       connection-timeout: 10000
       connection-test-query: SELECT 1
 
+# 登录 token 与 Redis：token 存在 Redis 里，服务重启后依然有效
+work-admin:
+  auth:
+    # redis（默认，重启不丢）| memory（进程内存，仅供离线开发 / 测试）
+    token-store: ${TOKEN_STORE:redis}
+    # token 有效期，每次访问自动续期；支持 7d / 12h / 30m 这类写法
+    token-ttl: ${TOKEN_TTL:7d}
+  redis:
+    address: ${REDIS_ADDRESS:redis://118.25.25.164:6379}
+    password: ${REDIS_PASSWORD:}
+    database: ${REDIS_DATABASE:0}
+    connect-timeout: 3s
+
 logging:
   level:
     root: INFO
