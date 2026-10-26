@@ -10,7 +10,7 @@ Vue 3（选项式 API，纯 JavaScript）+ Element Plus + Vuex + Vue Router + Ax
 
 ## 一、启动
 
-需要 JDK 17+、Maven、Node.js 18+。
+需要 JDK 17+、Maven、Node.js 18+，以及一个可用的 Redis（登录 token 存在里面）。
 
 ```bash
 # 1) 后端（http://localhost:8081）
@@ -24,6 +24,15 @@ npm run serve
 
 浏览器打开 http://localhost:8080。账号为数据库中真实的用户账号，由管理员在「用户管理」中维护。
 
+Redis 默认连 `redis://118.25.25.164:6379`（和 MySQL 同一台机器）。本机起 Redis 就用环境变量覆盖：
+
+```bash
+REDIS_ADDRESS=redis://127.0.0.1:6379 mvn spring-boot:run
+```
+
+手头没有 Redis 也想先跑通接口，可以用 `TOKEN_STORE=memory mvn spring-boot:run`，
+代价是后端一重启就要重新登录（这正好也说明了 token 存 Redis 的意义）。
+
 首次启动后端需要配置数据库连接：复制 `server/application-local.yml.example` 为
 `server/application-local.yml` 并填入账号密码（该文件不入库，也可用 `DB_URL` / `DB_USERNAME` /
 `DB_PASSWORD` 环境变量覆盖）。
@@ -34,15 +43,15 @@ npm run serve
 
 | 模块 | 说明 |
 |---|---|
-| 登录 / 注册 | `POST /api/login`、`POST /api/register`；token 存 Vuex + localStorage，退出调 `POST /api/logout` |
+| 登录 / 注册 | `POST /api/login`、`POST /api/register`；前端 token 存 Vuex + localStorage，后端 token 存 Redis（Redisson），退出调 `POST /api/logout`。**后端重启后登录态不丢**，刷新页面不会被踢回登录页 |
 | 路由守卫 | 未登录跳登录页；按后端返回的权限点（`meta.permission`）拦截无权限页面 |
 | 用户管理 | 用户列表、搜索、新增、编辑、删除、绑定角色；`GET/POST/PUT/DELETE /api/users` |
 | 角色管理 | 角色 CRUD + 权限树分配；`/api/roles` 系列接口 |
 | 菜单与按钮权限 | 目录 / 页面 / 按钮三级节点维护，内置节点仅可改名与排序；`/api/menus` 系列接口 |
-| 群聊 | 群列表、历史消息分页、发送消息、建群、加群、成员抽屉；`/api/groups` 系列接口，5 秒轮询增量合并 |
+| 群聊 | 群列表、历史消息分页、发送消息、建群、加群、成员抽屉；`/api/groups` 系列接口，5 秒轮询（每轮拉最近 50 条，前端按 id 合并） |
 | 仪表盘 | 四个统计卡（用户 / 群组 / 消息 / 群成员）+ 最近消息趋势，数据来自后端聚合查询 |
 
-- 按钮级权限由 `can('user:edit')` 之类的 `v-if` 控制，仅隐藏 UI，不构成安全边界；接口级校验由后端 `@RequirePermission` 完成。
+- 按钮级权限由 `can('user:update')` 之类的 `v-if` 控制，仅隐藏 UI，不构成安全边界；接口级校验由后端 `@RequirePermission` 完成。
 - 页面组件按路由懒加载，chunk 加载失败时自动刷新一次。
 
 ---

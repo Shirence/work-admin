@@ -28,6 +28,9 @@ service/           业务规则都在这一层
    ├─ MenuService        sys_menu CRUD
    ├─ GroupChatService   群列表 / 历史消息 / 发送 / 建群 / 加群
    ├─ DashboardService   真实计数
+   ├─ TokenStore         token 存取接口（create / get / remove）
+   │   ├─ RedisTokenStore    ★ 默认：token 存 Redis，服务重启后依然有效
+   │   └─ MemoryTokenStore   降级：进程内存，仅离线开发 / 测试
    └─ StuStore           ★ 唯一允许出现 stu 表 SQL 的地方
 entity/            Account / Role / Menu 是**值对象**（无 JPA 注解），只用于层间传递
 dto/               对外契约，字段与前端一一对应
@@ -45,6 +48,12 @@ dto/               对外契约，字段与前端一一对应
   - `super_admin` 在 `sys_role_menu` 里没有逐条授权，按约定直接给 `*`。
   - 所有登录用户额外获得基础权限 `dashboard:view`，否则 `member` 连概览页都进不去。
 - 权限校验：`@RequirePermission` + `AuthInterceptor` → `AccessService.require`。
+- token：登录成功后由 `TokenStore` 生成，**存在 Redis 里**（Redisson，key `work-admin:login:token:<uuid>`，
+  值是 `UserInfo` 的 JSON，TTL 默认 7 天、每次访问滑动续期）。
+  - 因为不落在进程内存，**重启服务 / 换个实例部署都不会把用户踢下线**。
+  - `AuthInterceptor` 每次请求用请求头 `token` 去 Redis 换身份；换不到直接返回 `code=401`。
+  - `POST /api/logout` 删掉 Redis 里的 key，token 立即失效。
+  - 本机没有 Redis 时可设 `work-admin.auth.token-store=memory` 退回内存实现（重启即失效，仅用于离线开发与测试）。
 
 ## 4. 群聊为什么不做端到端加密
 
@@ -90,6 +99,10 @@ stu 的聊天是**服务端明文**：WebSocket 收到消息直接写 `chat_mess
 - `super_admin` 不走逐条授权（否则一旦误删 `sys_role_menu` 就会把自己锁死）。
 - 数据库账号 `stu` 没有 DROP 权限：任何「删表」都不可能发生，代码里也不做这类操作。
 - 群聊发送只接受登录用户，内容长度上限 2000 字，发送者身份取自 token 而非请求体。
+- token 只存身份快照（`UserInfo`），不存密码；Redis 里的 key 一律带 `work-admin:login:token:` 前缀和 TTL，
+  不会长期堆积，也不会和 stu 自己的 key 混在一起。
+- `work-admin.auth.token-store=redis`（默认）时，Redis 连不上服务直接启动失败——这是故意的，
+  否则会静默退化成「重启就掉登录」，而用户以为登录态是持久化的。
 
 ## 7. 自检清单
 
@@ -111,4 +124,11 @@ curl -s --noproxy '*' -X POST http://127.0.0.1:8081/api/groups/1/messages \
   -H "token: <token>" -H 'Content-Type: application/json' \
   -d '{"content":"hello","clientMessageId":"self-check-1"}'
 # 期望：code=200，消息进 chat_message，stu 前端同步可见
+
+# token 是否真的落在 Redis（应看到 work-admin:login:token:<uuid>，TTL 接近 7 天）
+redis-cli -h 118.25.25.164 --scan --pattern 'work-admin:login:token:*'
+redis-cli -h 118.25.25.164 ttl 'work-admin:login:token:<uuid>'
+# 重启后端后，用同一个 token 再请求 /api/me
+# 期望：code=200，登录态没有被重启清掉
+curl -s --noproxy '*' http://127.0.0.1:8081/api/me -H "token: <token>"
 ```
