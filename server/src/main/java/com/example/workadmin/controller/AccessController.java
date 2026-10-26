@@ -80,10 +80,11 @@ public class AccessController {
     @PutMapping("/users/{id}/role")
     @RequirePermission("user:assign-role")
     public Result<AccountDtos.AccountRow> bindRole(@PathVariable Long id,
-                                                    @RequestBody AccountDtos.RoleBindRequest request) {
+                                                    @RequestBody AccountDtos.RoleBindRequest request,
+                                                    @RequestAttribute(AuthInterceptor.CURRENT_USER) UserInfo userInfo) {
         if (request == null || request.roleId() == null) {
             return Result.fail(400, "请选择角色");
         }
-        return Result.ok("角色已更新", roleService.bindRole(id, request.roleId()));
+        return Result.ok("角色已更新", roleService.bindRole(id, request.roleId(), userInfo.getUsername()));
     }
 }

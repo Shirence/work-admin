@@ -51,9 +51,11 @@ public class GroupChatService {
         StuStore.StuUser me = requireUser(account);
         boolean admin = isSuperAdmin(me);
         List<StuStore.StuGroup> rows = store.listGroups(admin ? null : me.id());
+        // 一次查出「我加入了哪些群」，别在循环里逐行查库
+        java.util.Set<Long> joinedIds = store.groupIdsOf(me.id());
         List<GroupChatDtos.GroupRow> result = new ArrayList<>();
         for (StuStore.StuGroup g : rows) {
-            boolean joined = admin || store.isMember(g.id(), me.id());
+            boolean joined = admin || joinedIds.contains(g.id());
             result.add(toRow(g, joined));
         }
         return result;

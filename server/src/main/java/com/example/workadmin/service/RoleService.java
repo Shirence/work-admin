@@ -219,13 +219,18 @@ public class RoleService {
     }
 
     @Transactional
-    public AccountDtos.AccountRow bindRole(Long accountId, Long roleId) {
+    public AccountDtos.AccountRow bindRole(Long accountId, Long roleId, String currentUsername) {
         StuStore.StuUser user = store.findUserById(accountId)
                 .orElseThrow(() -> new BizException(404, "用户不存在"));
         StuStore.StuRole role = requireEnabledRole(roleId);
-        if (SUPER_ADMIN.equals(user.roleCode()) && !SUPER_ADMIN.equals(role.code())
-                && !isSuperAdmin(user.account())) {
-            throw new BizException(403, "不能降级 super_admin 账号");
+        // 这里必须判断「当前操作者」是不是超管。
+        // 早期版本写成了 isSuperAdmin(user.account())（判断被改的人），
+        // 结果任何拿到 user:assign-role 的账号都能把 super_admin 降级成普通角色。
+        boolean currentSuperAdmin = isSuperAdmin(currentUsername);
+        boolean targetSuperAdmin = SUPER_ADMIN.equals(user.roleCode());
+        boolean grantSuperAdmin = SUPER_ADMIN.equals(role.code());
+        if ((targetSuperAdmin || grantSuperAdmin) && !currentSuperAdmin) {
+            throw new BizException(403, "只有 super_admin 可以变更或授予 super_admin 角色");
         }
         store.bindRole(accountId, role.id());
         return store.findUserById(accountId).map(RoleService::toRow)

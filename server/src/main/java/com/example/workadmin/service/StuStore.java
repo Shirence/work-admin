@@ -124,12 +124,16 @@ public class StuStore {
         jdbc.update("insert into sys_user_role(user_id, role_id) values (?, ?)", userId, roleId);
     }
 
-    /** 该用户是否还挂在群主或消息记录上，用于删除前的安全检查。 */
+    /** 该用户是否还挂在群主、消息或群成员记录上，用于删除前的安全检查。 */
     public String userDataBlocker(long userId) {
         Integer groups = jdbc.queryForObject("select count(*) from chat_group where owner_id = ?", Integer.class, userId);
         if (groups != null && groups > 0) return "该用户是 " + groups + " 个群聊的群主";
         Integer messages = jdbc.queryForObject("select count(*) from chat_message where sender_id = ?", Integer.class, userId);
         if (messages != null && messages > 0) return "该用户有 " + messages + " 条历史消息";
+        // 群成员表也要查：只删 user 不删 chat_member 会留下孤儿成员，
+        // 群列表里的 member_count 按 chat_member 统计，成员详情却 join user，两边会不一致。
+        Integer members = jdbc.queryForObject("select count(*) from chat_member where user_id = ?", Integer.class, userId);
+        if (members != null && members > 0) return "该用户还是 " + members + " 个群聊的成员";
         return null;
     }
 
@@ -404,6 +408,12 @@ public class StuStore {
         Long v = jdbc.queryForObject(
                 "select count(*) from chat_member where group_id = ? and user_id = ?", Long.class, groupId, userId);
         return v != null && v > 0;
+    }
+
+    /** 一次查出某人加入的所有群，避免群列表里逐行 isMember 造成的 N+1。 */
+    public java.util.Set<Long> groupIdsOf(long userId) {
+        return new java.util.HashSet<>(
+                jdbc.queryForList("select group_id from chat_member where user_id = ?", Long.class, userId));
     }
 
     /** 按 id 倒序取最近 limit 条，返回时按 id 升序（便于直接渲染）。 */
