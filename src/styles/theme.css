@@ -1,0 +1,160 @@
+@import "~element-plus/theme-chalk/dark/css-vars.css";
+
+:root {
+  --app-primary:#4479e8;
+  --app-text:#26394f;
+  --app-muted:#8492a6;
+  --app-surface:#fff;
+  --app-background:#f3f6fb;
+  --app-border:#e3eaf3;
+  --app-header-height:72px;
+  --app-content-gap:24px;
+  --app-workspace-height:calc(100dvh - var(--app-header-height) - 2 * var(--app-content-gap));
+  --el-color-primary:var(--app-primary);
+  --el-color-primary-light-3:#7ca0ef;
+  --el-color-primary-light-5:#a2bcf4;
+  --el-color-primary-light-7:#c7d7f8;
+  --el-color-primary-light-8:#dae5fb;
+  --el-color-primary-light-9:#edf2fd;
+  --el-color-primary-dark-2:#3561bf;
+  --el-border-radius-base:8px;
+  --el-font-family:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;
+  font-family:var(--el-font-family);
+  color:var(--app-text);
+  background:var(--app-background);
+  font-synthesis:none;
+  -webkit-font-smoothing:antialiased;
+}
+html,body,#app { width:100%; min-height:100%; }
+button,input,textarea,select { font-family:inherit; }
+button:focus-visible,a:focus-visible { outline:2px solid var(--app-primary); outline-offset:3px; }
+::selection { color:#153d84; background:#dbe8ff; }
+.el-dialog { max-width:calc(100vw - 28px); border-radius:14px; }
+.el-dialog__header { padding-bottom:18px; border-bottom:1px solid var(--app-border); margin-bottom:20px; }
+.el-dialog__footer { border-top:1px solid var(--app-border); padding-top:18px; }
+.el-message { max-width:calc(100vw - 28px); }
+.app-mobile-navigation { background:#192b43; color:#e6edf7; }
+.app-mobile-navigation .el-drawer__header { color:#e6edf7; margin-bottom:8px; border-bottom:1px solid #ffffff0c; padding-bottom:18px; }
+.app-mobile-navigation .el-drawer__body { padding:0; }
+@media(max-width:768px) { :root { --app-header-height:64px; --app-content-gap:12px; } }
+/* 窄屏优先阅读数据列，操作列随表格横向滚动，避免固定列覆盖大半屏幕。 */
+@media(max-width:768px) {
+  .el-table .el-table__header-wrapper tr th.el-table-fixed-column--right,
+  .el-table .el-table__body-wrapper tr td.el-table-fixed-column--right { position:static !important; right:auto !important; }
+  .el-table .el-table-fixed-column--right::before { display:none; }
+}
+@media(prefers-reduced-motion:reduce) { *,*::before,*::after { scroll-behavior:auto !important; animation-duration:.01ms !important; transition-duration:.01ms !important; } }
+
+/* ============ 深色主题 ============ */
+html.dark {
+  --app-primary:#6f9dff;
+  --app-text:#c3d1de;
+  --app-muted:#8fa3b6;
+  --app-surface:#18232e;
+  --app-background:#0f1720;
+  --app-border:#2a3948;
+  color-scheme:dark;
+  color:var(--app-text);
+  background:var(--app-background);
+}
+html.dark body { background:var(--app-background); color:var(--app-text); }
+html.dark .page-title,html.dark h1 { color:#c0cfdd !important; }
+html.dark .el-table { --el-table-text-color:#b3c4d3; }
+html.dark .header { background:#15202a !important; border-color:var(--app-border) !important; }
+html.dark .aside { background:linear-gradient(180deg,#182635,#111a24) !important; border-color:#243343 !important; }
+html.dark .content { background:var(--app-background) !important; }
+html.dark .current-page { color:#dbe6ef; }
+html.dark .workspace-label,html.dark .breadcrumb-divider { color:#7f94a8; }
+html.dark .account-copy span { color:#b9c8d6; }
+html.dark .account-copy small { color:#7f94a8; }
+html.dark .account-avatar { background:#223446; border-color:#33495d; color:#9fc0ff; }
+html.dark .navigation-toggle { color:#b9c8d6; }
+html.dark .skip-link { background:#18232e; color:#9fc0ff; }
+html.dark .el-card,html.dark .el-dialog,html.dark .el-message-box,html.dark .el-drawer { background:var(--app-surface) !important; color:var(--app-text); }
+html.dark .el-card__body { color:var(--app-text); }
+html.dark .metric { background:#18232e !important; border-color:#2a3948 !important; box-shadow:none !important; }
+html.dark .metric strong { color:#e0eaf3 !important; }
+html.dark .metric span,html.dark .metric small { color:#8fa3b6 !important; }
+
+/* 表格：统一深色底，避免 stripe 行出现亮白条 */
+html.dark .table-panel { border-color:#2a3948 !important; }
+html.dark .table-panel .el-table {
+  --el-table-bg-color:#15202a;
+  --el-table-tr-bg-color:#15202a;
+  --el-table-header-bg-color:#1b2936;
+  --el-table-header-text-color:#93a7ba;
+  --el-table-row-hover-bg-color:#20303e;
+  --el-table-border-color:#2a3948;
+  --el-table-text-color:#b9c8d6;
+}
+html.dark .table-panel .el-table th.el-table__cell { background:#1b2936 !important; color:#93a7ba !important; }
+html.dark .table-panel .el-table__body tr.el-table__row--striped td.el-table__cell { background:#17232e !important; }
+html.dark .table-panel .el-table__body tr:not(.el-table__row--striped) td.el-table__cell { background:#15202a !important; }
+html.dark .table-panel .el-table__body tr:hover > td.el-table__cell { background:#20303e !important; }
+html.dark .table-panel .el-table__body tr td.el-table-fixed-column--right { background:#15202a !important; }
+html.dark .table-panel .el-table__body tr.el-table__row--striped td.el-table-fixed-column--right { background:#17232e !important; }
+html.dark .table-panel .cell-id { background:#223242 !important; color:#a9bccd !important; }
+html.dark .table-panel .cell-account { color:#9fb4c7 !important; }
+html.dark .el-table__body tr.el-table__row--striped td.el-table__cell { background:#17232e !important; }
+html.dark .el-table__body tr:not(.el-table__row--striped) td.el-table__cell { background:#15202a !important; }
+html.dark .el-table__body tr:hover > td.el-table__cell { background:#20303e !important; }
+html.dark .el-table th.el-table-fixed-column--right { background:#1b2936 !important; }
+/* 行悬停不做颜色过渡，避免浅色模式快速移动时闪烁 */
+.el-table__body tr > td.el-table__cell { transition: none !important; }
+html.dark .el-table { --el-table-bg-color:transparent; --el-table-tr-bg-color:transparent; --el-table-header-bg-color:#1d2a36; --el-table-row-hover-bg-color:#223242; --el-table-border-color:#2a3948; --el-table-text-color:#b3c4d3; --el-table-header-text-color:#93a7ba; }
+html.dark .work-detail h3,html.dark .page-description,html.dark .work-detail small { color:#8fa3b6; }
+html.dark .login-page { background:#0f1720; }
+html.dark .login-panel { background:#0f1720; }
+html.dark .login-box { background:#18232e; border-color:#2a3948; }
+html.dark .login-title { color:#e4edf5; }
+html.dark .login-subtitle,html.dark .login-footer,html.dark .register-entry { color:#8fa3b6; }
+html.dark .login-box .el-input__wrapper { background:#1b2937 !important; box-shadow:0 0 0 1px #334759 inset !important; }
+html.dark .login-box .el-input__inner { background:#1b2937 !important; color:#dbe6ef !important; }
+html.dark .login-box .el-input__inner::placeholder { color:#7f94a8 !important; }
+html.dark .login-box .el-input__prefix,html.dark .login-box .el-input__suffix { color:#8fa3b6; }
+
+/* 微信风格聊天 */
+html.dark .chat-shell { background:#0f171e !important; border-color:#2a3948 !important; }
+html.dark .group-sidebar { background:#141e27 !important; border-color:#2a3948 !important; }
+html.dark .sidebar-heading h2,html.dark .group-name { color:#dbe6ef !important; }
+html.dark .group-row:hover { background:#1d2b37 !important; }
+html.dark .group-row.active { background:#253747 !important; }
+html.dark .group-preview,html.dark .group-line time,html.dark .connection { color:#8296a9 !important; }
+html.dark .search-bar .el-input__wrapper { background:#1b2834 !important; }
+html.dark .conversation-header { background:#16212b !important; border-color:#2a3948 !important; }
+html.dark .conversation-title h1 { color:#e0eaf3 !important; }
+html.dark .conversation-title p { color:#8296a9 !important; }
+html.dark .message-scroll { background:#0f171e !important; }
+html.dark .message-bubble { background:#1b2834 !important; border-color:#2a3948 !important; color:#dbe6ef !important; }
+html.dark .message-bubble::before { border-color:#2a3948 !important; }
+html.dark .own .message-bubble { background:#1f5136 !important; border-color:#2c6a47 !important; color:#e8f6ee !important; }
+html.dark .own .message-bubble::before { border-color:#2c6a47 !important; }
+html.dark .sender-name,html.dark .time-separator { color:#8296a9 !important; }
+html.dark .chat-notice { background:#2a2518 !important; color:#d8b878 !important; }
+
+/* AI 对话 */
+html.dark .ai-workspace { background:#131d26 !important; border-color:#2a3948 !important; }
+html.dark .ai-header { border-color:#2a3948 !important; }
+html.dark .ai-identity h1 { color:#e0eaf3 !important; }
+html.dark .ai-identity p { color:#8fa3b6 !important; }
+html.dark .ai-workspace .conversation { background:#0f171e !important; }
+html.dark .ai-workspace .welcome h2 { color:#dbe6ef !important; }
+html.dark .ai-workspace .welcome p { color:#8fa3b6 !important; }
+html.dark .ai-workspace .suggestions button { background:#1b2834 !important; border-color:#2a3948 !important; color:#c8d6e3 !important; }
+html.dark .ai-workspace .question > div { background:#203a31 !important; color:#dbe6ef !important; }
+html.dark .ai-workspace .assistant-avatar { background:#203a31 !important; color:#8ce0bd !important; }
+html.dark .ai-workspace .assistant-label { color:#9fb4c7 !important; }
+html.dark .ai-workspace .answer-footer,html.dark .ai-workspace .thinking,html.dark .ai-workspace .no-answer { color:#8296a9 !important; }
+html.dark .ai-workspace .composer { background:#131d26 !important; border-color:#2a3948 !important; }
+html.dark .ai-workspace .input-box { border-color:#2a3948 !important; background:#18232e !important; }
+html.dark .ai-workspace textarea { color:#dbe6ef !important; }
+html.dark .ai-workspace .hint { color:#7f94a8 !important; }
+html.dark .ai-workspace .error { background:#2a1b1b !important; border-color:#5a3333 !important; color:#f0b4b4 !important; }
+html.dark .ai-workspace .session-list { background:#141f29 !important; border-color:#2a3948 !important; }
+html.dark .ai-workspace .session-list h2 { color:#9fb4c7 !important; }
+html.dark .ai-workspace .session-list p { color:#7f94a8 !important; }
+html.dark .ai-workspace .session-title { color:#c3d1de !important; }
+html.dark .ai-workspace .session-title small { color:#7f94a8 !important; }
+html.dark .ai-workspace .session.active { background:#20303e !important; }
+html.dark .ai-workspace .session-delete { color:#8296a9 !important; }
+html.dark .ai-workspace .session-delete:hover { color:#f08a8a !important; }
